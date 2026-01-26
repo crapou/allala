@@ -1,0 +1,238 @@
+:root{
+  --bg0:#05070b;
+  --bg1:#070c14;
+  --card: rgba(255,255,255,0.06);
+  --stroke: rgba(255,255,255,0.10);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.62);
+  --muted2: rgba(255,255,255,0.40);
+  --blue: #2f7bf6;
+  --blue2:#1f5fd8;
+  --green: rgba(34,197,94,0.16);
+  --violet: rgba(168,85,247,0.14);
+
+  --r: 22px;
+  --shadow: 0 30px 90px rgba(0,0,0,0.55);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  color: var(--text);
+  background: var(--bg0);
+  overflow:hidden;
+}
+
+/* ================= BACKGROUND ================= */
+.bg{
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(1200px 720px at 18% 10%, rgba(47,123,246,0.26), transparent 60%),
+    radial-gradient(900px 560px at 84% 12%, rgba(255,255,255,0.10), transparent 62%),
+    radial-gradient(1000px 760px at 72% 86%, var(--green), transparent 66%),
+    radial-gradient(900px 650px at 52% 65%, var(--violet), transparent 68%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+/* ================= TOPBAR ================= */
+.topbar{
+  position:fixed;
+  inset:0 0 auto 0;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 18px;
+  z-index:10;
+  background: rgba(5,7,11,0.55);
+  backdrop-filter: blur(18px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+
+.stage{
+  position:relative;
+  height:100%;
+  padding-top:64px;
+}
+
+/* ================= HOME ================= */
+.home{
+  height: calc(100% - 64px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 28px;
+}
+
+.home-inner{
+  width:min(900px, 92vw);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:16px;
+}
+
+/* 🔥 RESPONSIVE LOGO */
+.home-logo{
+  width: min(800px, 90vw);
+  max-width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 40px 90px rgba(0,0,0,0.65))
+    drop-shadow(0 0 40px rgba(47,123,246,0.25));
+}
+
+.home-h1{
+  font-size: clamp(24px, 4vw, 44px);
+  line-height:1.05;
+}
+
+.home-p{
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 620px;
+}
+
+/* ================= PROMPT BAR ================= */
+.promptbar{
+  width: min(860px, 96vw);
+  display:flex;
+  gap:12px;
+  padding:12px;
+  border-radius:20px;
+  background: rgba(255,255,255,0.075);
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.prompt-input{
+  flex:1;
+  min-height:48px;
+  max-height:160px;
+  resize:none;
+  background:transparent;
+  border:none;
+  outline:none;
+  color:var(--text);
+  font-size:14px;
+}
+
+/* ================= VIEWER ================= */
+.viewer{
+  height: calc(100% - 64px);
+  display:flex;
+  justify-content:center;
+  padding:22px;
+}
+
+.viewer-inner{
+  width:min(1200px, 96vw);
+  height:100%;
+  display:flex;
+}
+
+.viewer-card{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+
+.viewer-head{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
+}
+
+.frame{
+  position:relative;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.img{
+  position:relative;
+  z-index:2;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  border-radius: calc(var(--r) - 6px);
+}
+
+/* 🔥 LOGO OVERLAY RESPONSIVE */
+.logo-overlay{
+  position:absolute;
+  right:18px;
+  bottom:18px;
+  width:96px;
+  z-index:5;
+  pointer-events:none;
+}
+
+/* ================= BUTTONS ================= */
+.btn{
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.btn-primary{
+  height:42px;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+}
+
+/* ================= RESPONSIVE BREAKPOINTS ================= */
+
+/* 📱 MOBILE */
+@media (max-width: 640px){
+  body{overflow:auto}
+
+  .home{padding:16px}
+  .home-logo{width: 92vw}
+
+  .promptbar{
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .btn-primary{
+    width:100%;
+  }
+
+  .viewer{
+    padding:12px;
+  }
+
+  .logo-overlay{
+    width:64px;
+    right:12px;
+    bottom:12px;
+  }
+}
+
+/* 📱📱 TABLET */
+@media (max-width: 900px){
+  .viewer-inner{
+    width:100%;
+  }
+
+  .home-inner{
+    width:100%;
+  }
+}
+
+.hidden{display:none}
