@@ -28,7 +28,8 @@ body{
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   color:var(--text);
   background:var(--bg0);
-  overflow:hidden;
+  overflow-x:hidden;          /* lock horizontal */
+  overflow-y:auto;            /* allow vertical scroll if needed */
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
@@ -72,13 +73,13 @@ body{
 
 .stage{
   position:relative;
-  height:100%;
+  min-height:100%;
   padding-top:64px;
 }
 
 /* ================= HOME ================= */
 .home{
-  height: calc(100% - 64px);
+  min-height: calc(100vh - 64px);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -94,7 +95,6 @@ body{
   gap:18px;
 }
 
-/* LOGO */
 .home-logo{
   width:min(820px, 90vw);
   height:auto;
@@ -103,7 +103,6 @@ body{
     drop-shadow(0 0 40px rgba(47,123,246,0.25));
 }
 
-/* TITLES */
 .home-h1{
   font-size:clamp(26px, 4vw, 46px);
   line-height:1.05;
@@ -175,7 +174,7 @@ body{
 
 /* ================= VIEWER ================= */
 .viewer{
-  height: calc(100% - 64px);
+  min-height: calc(100vh - 64px);
   display:flex;
   justify-content:center;
   padding:22px;
@@ -183,7 +182,7 @@ body{
 
 .viewer-inner{
   width:min(1200px, 96vw);
-  height:100%;
+  min-height: calc(100vh - 64px - 44px);
   display:flex;
 }
 
@@ -196,6 +195,7 @@ body{
   border-radius:var(--r);
   overflow:hidden;
   backdrop-filter: blur(16px);
+  min-height: 60vh;
 }
 
 .viewer-head{
@@ -223,6 +223,7 @@ body{
   align-items:center;
   justify-content:center;
   padding:20px;
+  min-height: 52vh; /* keeps image space visible on short screens */
 }
 
 .img{
@@ -232,6 +233,7 @@ body{
   height:100%;
   object-fit:contain;
   border-radius: calc(var(--r) - 6px);
+  max-height: 72vh; /* prevents “cut” feeling */
 }
 
 /* LOGO OVERLAY */
@@ -249,8 +251,6 @@ body{
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 640px){
-  body{overflow:auto}
-
   .home{padding:18px}
   .home-logo{width:92vw}
 
@@ -271,5 +271,31 @@ body{
     width:64px;
     right:12px;
     bottom:12px;
+  }
+}
+
+/* ✅ Extra safety for small laptops / low heights */
+@media (max-height: 820px), (max-width: 900px){
+  .viewer{
+    height:auto;
+    align-items:stretch;
+  }
+
+  .viewer-inner{
+    height:auto;
+    min-height:auto;
+  }
+
+  .viewer-card{
+    min-height: 70vh;
+  }
+
+  .frame{
+    min-height: 52vh;
+    padding:14px;
+  }
+
+  .img{
+    max-height: 68vh;
   }
 }
