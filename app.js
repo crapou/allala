@@ -1,6 +1,7 @@
 // ================== CONFIGURATION ==================
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
-const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgMI"; // ⚠️ Mets ta clé API ici
+// ⚠️ Attention : ta clé est visible ici. Pense à la restreindre dans Google Cloud Console.
+const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgMI"; 
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
 
 // ================== UI ELEMENTS ==================
@@ -58,24 +59,53 @@ async function callMake(promptText) {
   return res.json();
 }
 
+/**
+ * Correction de l'envoi à Gemini
+ */
 async function getNewPromptFromGemini(imageBase64, userModification) {
-  const systemPrompt = `Analyze this image and the user's request: "${userModification}". Write a single, highly detailed English prompt for an AI image generator to create this modified version. Keep the same style. Response: [Prompt only]`;
+  // 1. NETTOYAGE CRUCIAL : Gemini refuse le préfixe "data:image/png;base64,"
+  // On enlève tout ce qui précède la virgule si présent, sinon on garde tel quel.
+  const cleanBase64 = imageBase64.includes(",") 
+    ? imageBase64.split(",")[1] 
+    : imageBase64;
+
+  const systemPrompt = `You are an AI design assistant for Alstom. 
+Analyze the provided image and the user's request: "${userModification}". 
+Write a new, highly detailed image generation prompt in English that modifies the image as requested while keeping the same photorealistic style and composition. 
+Output ONLY the new prompt text.`;
+
+  const payload = {
+    contents: [{
+      parts: [
+        { text: systemPrompt },
+        { 
+          inline_data: { 
+            mime_type: "image/png", 
+            data: cleanBase64.trim() 
+          } 
+        }
+      ]
+    }]
+  };
 
   const response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: systemPrompt },
-          { inline_data: { mime_type: "image/png", data: imageBase64 } }
-        ]
-      }]
-    })
+    body: JSON.stringify(payload)
   });
 
-  if (!response.ok) throw new Error("Gemini API Error");
+  if (!response.ok) {
+    const errorDetail = await response.json();
+    console.error("Gemini API Error Detail:", errorDetail);
+    throw new Error(errorDetail.error?.message || "Gemini rejection (400)");
+  }
+
   const data = await response.json();
+  
+  if (!data.candidates || !data.candidates[0].content) {
+    throw new Error("Gemini blocked the response (safety filters).");
+  }
+
   return data.candidates[0].content.parts[0].text;
 }
 
@@ -106,14 +136,13 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     const result = await callMake(promptToUse);
     if (result.status !== "ok") throw new Error("Make returned an error.");
 
-    currentRawBase64 = result.image_base64;
+    // Sauvegarde pour Gemini et pour l'affichage
+    currentRawBase64 = result.image_base64; 
     currentFullDataUrl = `data:${result.mime_type};base64,${result.image_base64}`;
 
-    // 2. Affichage Progressif (Correction Onload/Cache)
+    // 2. Affichage Progressif
     imgBlur.src = currentFullDataUrl;
     imgBlur.classList.remove("hidden");
-    
-    // On précharge l'image finale
     imgFinal.src = currentFullDataUrl;
 
     const revealImage = () => {
@@ -121,14 +150,12 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
       imgBlur.classList.add("hidden");
       imgFinal.classList.remove("hidden");
       
-      // On force un petit délai pour que la transition CSS 'opacity' fonctionne
       setTimeout(() => {
         imgFinal.classList.add("reveal");
         logoOverlay.classList.remove("hidden");
       }, 50);
     };
 
-    // Si l'image est déjà en cache (Base64 instantané), onload ne se déclenchera pas forcément
     if (imgFinal.complete) {
       revealImage();
     } else {
@@ -144,6 +171,7 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     if (isIteration) iterationPromptInput.value = "";
 
   } catch (err) {
+    console.error(err);
     showError(err.message);
     setStatus("Error occurred.");
   } finally {
@@ -171,8 +199,12 @@ btnApplyIteration.addEventListener("click", async () => {
   try {
     setStatus("Gemini is thinking...");
     btnApplyIteration.disabled = true;
+    
+    // On passe l'image brute (base64) à Gemini
     const newPrompt = await getNewPromptFromGemini(currentRawBase64, modifText);
-    console.log("Gemini Prompt:", newPrompt);
+    console.log("Gemini created this prompt:", newPrompt);
+    
+    // On relance le processus avec le prompt amélioré par Gemini
     await runGenerationProcess(newPrompt, true);
   } catch (err) {
     showError("Gemini analysis failed: " + err.message);
@@ -181,7 +213,6 @@ btnApplyIteration.addEventListener("click", async () => {
   }
 });
 
-// Téléchargement propre
 function downloadImage() {
   if (!currentFullDataUrl) return;
   const a = document.createElement("a");
