@@ -1,8 +1,10 @@
 // ================== CONFIGURATION ==================
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
-const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgMI"; 
 
-// On passe sur le modèle 1.5 Flash (ultra stable et rapide) pour éviter les erreurs de quota/version
+// Clé mise à jour (Vérifie bien qu'il n'y a pas d'espace caché autour)
+const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgM"; 
+
+// Utilisation du modèle 1.5 Flash pour une stabilité maximale
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ================== UI ELEMENTS ==================
@@ -59,14 +61,13 @@ async function callMake(promptText) {
 }
 
 async function getNewPromptFromGemini(imageBase64, userModification) {
-  // NETTOYAGE STRICT DU BASE64
-  // On retire le header 'data:image/png;base64,' s'il est présent
+  // On s'assure de ne garder que le base64 pur pour l'IA
   const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpeg|webp|jpg);base64,/, "");
 
   const payload = {
     contents: [{
       parts: [
-        { text: `You are a design expert. Based on this image, create a new detailed English prompt to: ${userModification}. Style: Photorealistic, cinematic. Output ONLY the prompt.` },
+        { text: `You are an Alstom design expert. Based on this image, create a new detailed English prompt to: ${userModification}. Maintain the sleek, professional Alstom aesthetic. Output ONLY the new prompt text.` },
         { 
           inline_data: { 
             mime_type: "image/png", 
@@ -92,15 +93,8 @@ async function getNewPromptFromGemini(imageBase64, userModification) {
   const data = await response.json();
 
   if (!response.ok) {
-    // On affiche l'erreur REELLE dans la console pour débugger
-    console.error("FULL GEMINI ERROR:", data);
-    const reason = data.error?.message || "Unknown error";
-    throw new Error(`Gemini rejected: ${reason}`);
-  }
-
-  if (!data.candidates || !data.candidates[0].content) {
-    console.warn("Gemini Safety Filter triggered:", data);
-    throw new Error("Content blocked by safety filters. Try another request.");
+    console.error("DEBUG API:", data);
+    throw new Error(data.error?.message || "Erreur de validation API");
   }
 
   return data.candidates[0].content.parts[0].text;
@@ -117,7 +111,7 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
       viewerSection.classList.remove("hidden");
     }
 
-    setStatus(isIteration ? "Updating..." : "Generating...");
+    setStatus(isIteration ? "Processing updates..." : "Generating Concept...");
     
     skeleton.classList.remove("hidden");
     imgBlur.classList.add("hidden");
@@ -129,7 +123,7 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     btnApplyIteration.disabled = true;
 
     const result = await callMake(promptToUse);
-    if (result.status !== "ok") throw new Error("Make error.");
+    if (result.status !== "ok") throw new Error("Make generation failed.");
 
     currentRawBase64 = result.image_base64; 
     currentFullDataUrl = `data:${result.mime_type};base64,${result.image_base64}`;
@@ -151,7 +145,7 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     if (imgFinal.complete) revealImage();
     else imgFinal.onload = revealImage;
 
-    setStatus("Done.");
+    setStatus("Concept Ready.");
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
     btnIterate.classList.remove("hidden");
@@ -159,7 +153,7 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     if (isIteration) iterationPromptInput.value = "";
 
   } catch (err) {
-    console.error("Process Error:", err);
+    console.error("Runtime Error:", err);
     showError(err.message);
     setStatus("Error.");
   } finally {
@@ -185,7 +179,7 @@ btnApplyIteration.addEventListener("click", async () => {
   if (!modifText || !currentRawBase64) return;
 
   try {
-    setStatus("Gemini is thinking...");
+    setStatus("Gemini is analyzing the design...");
     btnApplyIteration.disabled = true;
     const newPrompt = await getNewPromptFromGemini(currentRawBase64, modifText);
     await runGenerationProcess(newPrompt, true);
@@ -200,7 +194,7 @@ function downloadImage() {
   if (!currentFullDataUrl) return;
   const a = document.createElement("a");
   a.href = currentFullDataUrl;
-  a.download = `alstom-${Date.now()}.png`;
+  a.download = `alstom-ai-concept-${Date.now()}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -209,4 +203,4 @@ function downloadImage() {
 btnDownload.addEventListener("click", downloadImage);
 btnDownloadTop.addEventListener("click", downloadImage);
 
-setStatus("Ready.");
+setStatus("System Ready.");
