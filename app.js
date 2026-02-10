@@ -1,11 +1,7 @@
-// ================== CONFIGURATION ==================
-const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
-
-// Clé mise à jour (Vérifie bien qu'il n'y a pas d'espace caché autour)
+// ================== CONFIGURATION GEMINI 3 ==================
+// Utilisation de Nano Banana Pro via l'endpoint Gemini 3 Pro Image
 const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgM"; 
-
-// Utilisation du modèle 1.5 Flash pour une stabilité maximale
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${GEMINI_API_KEY}`;
 
 // ================== UI ELEMENTS ==================
 const homeSection = document.getElementById("home");
@@ -30,58 +26,31 @@ const iterationZone = document.getElementById("iterationZone");
 let currentRawBase64 = null; 
 let currentFullDataUrl = null;
 
-// ================== UTILS ==================
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// ================== CORE API CALL (NANO BANANA PRO) ==================
 
-function showError(msg) {
-  errorBox.textContent = msg;
-  errorBox.classList.remove("hidden");
-}
-
-function clearError() {
-  errorBox.textContent = "";
-  errorBox.classList.add("hidden");
-}
-
-function setStatus(text) {
-  if (statusHome) statusHome.textContent = text;
-  if (statusViewer) statusViewer.textContent = text;
-}
-
-// ================== API CALLS ==================
-
-async function callMake(promptText) {
-  const res = await fetch(MAKE_WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idea: promptText }),
-  });
-  if (!res.ok) throw new Error(`Make error: ${res.status}`);
-  return res.json();
-}
-
-async function getNewPromptFromGemini(imageBase64, userModification) {
-  // On s'assure de ne garder que le base64 pur pour l'IA
-  const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpeg|webp|jpg);base64,/, "");
+async function callNanoBanana(prompt, base64Context = null) {
+  const parts = [{ text: prompt }];
+  
+  // Si on a une image (itération), on l'ajoute au payload pour le Image-to-Image
+  if (base64Context) {
+    parts.push({
+      inline_data: {
+        mime_type: "image/png",
+        data: base64Context.replace(/^data:image\/(png|jpeg);base64,/, "")
+      }
+    });
+  }
 
   const payload = {
-    contents: [{
-      parts: [
-        { text: `You are an Alstom design expert. Based on this image, create a new detailed English prompt to: ${userModification}. Maintain the sleek, professional Alstom aesthetic. Output ONLY the new prompt text.` },
-        { 
-          inline_data: { 
-            mime_type: "image/png", 
-            data: cleanBase64.trim() 
-          } 
-        }
-      ]
-    }],
-    safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-    ]
+    contents: [{ parts: parts }],
+    generationConfig: {
+      // Configuration spécifique à la génération d'image Gemini 3
+      "image_generation_config": {
+        "number_of_images": 1,
+        "aspect_ratio": "16:9",
+        "add_watermark": false
+      }
+    }
   };
 
   const response = await fetch(GEMINI_API_URL, {
@@ -93,114 +62,80 @@ async function getNewPromptFromGemini(imageBase64, userModification) {
   const data = await response.json();
 
   if (!response.ok) {
-    console.error("DEBUG API:", data);
-    throw new Error(data.error?.message || "Erreur de validation API");
+    console.error("Gemini 3 Error:", data);
+    throw new Error(data.error?.message || "Erreur Nano Banana Pro");
   }
 
-  return data.candidates[0].content.parts[0].text;
+  // On extrait l'image générée du flux de réponse
+  const imagePart = data.candidates[0].content.parts.find(p => p.inline_data);
+  if (!imagePart) throw new Error("Aucune image n'a été retournée par le modèle.");
+
+  return imagePart.inline_data.data;
 }
 
-// ================== CORE LOGIC ==================
+// ================== LOGIC ==================
 
-async function runGenerationProcess(promptToUse, isIteration = false) {
+async function runProcess(userInput, isIteration = false) {
   try {
     clearError();
     if (!isIteration) {
       homeSection.classList.add("hidden");
-      homeSection.style.display = "none";
       viewerSection.classList.remove("hidden");
     }
 
-    setStatus(isIteration ? "Processing updates..." : "Generating Concept...");
+    setStatus(isIteration ? "Modification en cours (Nano Banana Pro)..." : "Génération initiale...");
     
+    // UI Loading
     skeleton.classList.remove("hidden");
-    imgBlur.classList.add("hidden");
     imgFinal.classList.add("hidden");
     imgFinal.classList.remove("reveal");
-    logoOverlay.classList.add("hidden");
+
+    // Appel API Unique (Génération ou Itération)
+    const newBase64 = await callNanoBanana(userInput, isIteration ? currentRawBase64 : null);
     
-    btnGenerate.disabled = true;
-    btnApplyIteration.disabled = true;
+    currentRawBase64 = newBase64;
+    currentFullDataUrl = `data:image/png;base64,${newBase64}`;
 
-    const result = await callMake(promptToUse);
-    if (result.status !== "ok") throw new Error("Make generation failed.");
-
-    currentRawBase64 = result.image_base64; 
-    currentFullDataUrl = `data:${result.mime_type};base64,${result.image_base64}`;
-
-    imgBlur.src = currentFullDataUrl;
-    imgBlur.classList.remove("hidden");
+    // Affichage
     imgFinal.src = currentFullDataUrl;
-
-    const revealImage = () => {
+    imgFinal.onload = () => {
       skeleton.classList.add("hidden");
-      imgBlur.classList.add("hidden");
       imgFinal.classList.remove("hidden");
-      setTimeout(() => {
-        imgFinal.classList.add("reveal");
-        logoOverlay.classList.remove("hidden");
-      }, 50);
+      setTimeout(() => imgFinal.classList.add("reveal"), 50);
+      logoOverlay.classList.remove("hidden");
     };
 
-    if (imgFinal.complete) revealImage();
-    else imgFinal.onload = revealImage;
-
-    setStatus("Concept Ready.");
+    setStatus("Terminé.");
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
     btnIterate.classList.remove("hidden");
     iterationZone.classList.add("hidden");
-    if (isIteration) iterationPromptInput.value = "";
 
   } catch (err) {
-    console.error("Runtime Error:", err);
     showError(err.message);
-    setStatus("Error.");
-  } finally {
-    btnGenerate.disabled = false;
-    btnApplyIteration.disabled = false;
+    setStatus("Erreur.");
   }
 }
 
-// ================== EVENT LISTENERS ==================
+// ================== EVENTS ==================
 
 btnGenerate.addEventListener("click", () => {
-  const text = ideaInput.value.trim();
-  if (text) runGenerationProcess(text, false);
+  const val = ideaInput.value.trim();
+  if (val) runProcess(val, false);
 });
 
-btnIterate.addEventListener("click", () => {
-  iterationZone.classList.toggle("hidden");
-  if (!iterationZone.classList.contains("hidden")) iterationPromptInput.focus();
+btnApplyIteration.addEventListener("click", () => {
+  const val = iterationPromptInput.value.trim();
+  if (val && currentRawBase64) runProcess(val, true);
 });
 
-btnApplyIteration.addEventListener("click", async () => {
-  const modifText = iterationPromptInput.value.trim();
-  if (!modifText || !currentRawBase64) return;
+btnIterate.addEventListener("click", () => iterationZone.classList.toggle("hidden"));
 
-  try {
-    setStatus("Gemini is analyzing the design...");
-    btnApplyIteration.disabled = true;
-    const newPrompt = await getNewPromptFromGemini(currentRawBase64, modifText);
-    await runGenerationProcess(newPrompt, true);
-  } catch (err) {
-    showError(err.message);
-  } finally {
-    btnApplyIteration.disabled = false;
-  }
-});
-
-function downloadImage() {
-  if (!currentFullDataUrl) return;
+btnDownload.addEventListener("click", () => {
   const a = document.createElement("a");
   a.href = currentFullDataUrl;
-  a.download = `alstom-ai-concept-${Date.now()}.png`;
-  document.body.appendChild(a);
+  a.download = `alstom-nano-banana-${Date.now()}.png`;
   a.click();
-  document.body.removeChild(a);
-}
+});
 
-btnDownload.addEventListener("click", downloadImage);
-btnDownloadTop.addEventListener("click", downloadImage);
-
-setStatus("System Ready.");
+setStatus("Système Nano Banana Pro prêt.");
