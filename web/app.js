@@ -2,6 +2,10 @@
 const MAKE_WEBHOOK_URL =
   "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
 
+// ================== API CONFIG ==================
+const GEMINI_API_KEY = "TA_CLE_API_ICI"; // 🔑 AIzaSyAg9OpJHyiqXtL9uNWXv60qkiDjysPsqvk
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
+
 // ================== UI ==================
 const home = document.getElementById("home");
 const viewer = document.getElementById("viewer");
@@ -10,6 +14,8 @@ const idea = document.getElementById("idea");
 const btnGenerate = document.getElementById("btnGenerate");
 const btnDownload = document.getElementById("btnDownload");
 const btnDownloadTop = document.getElementById("btnDownloadTop");
+const btnIterate = document.getElementById("btnIterate");
+const btnApplyIteration = document.getElementById("btnApplyIteration");
 
 const statusHome = document.getElementById("statusHome");
 const statusViewer = document.getElementById("statusViewer");
@@ -20,6 +26,9 @@ const imgBlur = document.getElementById("imgBlur");
 const imgFinal = document.getElementById("imgFinal");
 const logoOverlay = document.getElementById("logoOverlay");
 
+const iterationZone = document.getElementById("iterationZone");
+const iterationPrompt = document.getElementById("iterationPrompt");
+
 // Canvas (optionnel – branding plus tard)
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -27,6 +36,7 @@ const logoImg = document.getElementById("logo");
 
 // ================== STATE ==================
 let lastDataUrl = null;
+let originalPrompt = null;
 
 // ================== UTILS ==================
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -126,7 +136,7 @@ function downloadPNG() {
 
     setViewerStatus("Downloading…");
 
-    // 🔥 téléchargement DIRECT de l’image générée (ultra fiable)
+    // 🔥 téléchargement DIRECT de l'image générée (ultra fiable)
     const blob = dataUrlToBlob(lastDataUrl);
     forceDownload(blob, `alstom-showroom-${Date.now()}.png`);
 
@@ -152,7 +162,7 @@ async function callMake(ideaText) {
   return res.json();
 }
 
-// ================== MAIN ==================
+// ================== MAIN GENERATION ==================
 btnGenerate.addEventListener("click", async () => {
   clearError();
   toViewer();
@@ -165,6 +175,9 @@ btnGenerate.addEventListener("click", async () => {
   try {
     const ideaText = idea.value.trim();
     if (!ideaText) throw new Error("Please enter an idea.");
+
+    // Sauvegarder le prompt original
+    originalPrompt = ideaText;
 
     const result = await callMake(ideaText);
     if (result.status !== "ok") throw new Error("Generation failed.");
@@ -185,6 +198,10 @@ btnGenerate.addEventListener("click", async () => {
     setViewerStatus("Done.");
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
+    
+    // ✅ NOUVEAU : Afficher le bouton "Modify Image"
+    btnIterate.classList.remove("hidden");
+    
   } catch (e) {
     setLoading(false);
     setViewerStatus("Generation failed.");
@@ -192,6 +209,22 @@ btnGenerate.addEventListener("click", async () => {
   } finally {
     btnGenerate.disabled = false;
   }
+});
+
+// ================== ITERATION LOGIC ==================
+// ✅ Afficher/masquer la zone d'itération
+btnIterate.addEventListener("click", () => {
+  if (iterationZone.classList.contains("hidden")) {
+    iterationZone.classList.remove("hidden");
+    iterationPrompt.focus();
+  } else {
+    iterationZone.classList.add("hidden");
+  }
+});
+
+// ✅ Appliquer l'itération (on codera ça à l'ÉTAPE 2)
+btnApplyIteration.addEventListener("click", async () => {
+  alert("On va coder ça ensemble à l'ÉTAPE 2 ! 🚀");
 });
 
 // ================== INIT ==================
