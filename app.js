@@ -1,21 +1,20 @@
 // ================== CONFIGURATION ==================
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
-// ⚠️ Attention : ta clé est visible ici. Pense à la restreindre dans Google Cloud Console.
 const GEMINI_API_KEY = "AIzaSyAsZ825g314qrs7uM7SOqDPOcmEH9njbgMI"; 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+// On passe sur le modèle 1.5 Flash (ultra stable et rapide) pour éviter les erreurs de quota/version
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ================== UI ELEMENTS ==================
 const homeSection = document.getElementById("home");
 const viewerSection = document.getElementById("viewer");
 const ideaInput = document.getElementById("idea");
 const iterationPromptInput = document.getElementById("iterationPrompt");
-
 const btnGenerate = document.getElementById("btnGenerate");
 const btnDownload = document.getElementById("btnDownload");
 const btnDownloadTop = document.getElementById("btnDownloadTop");
 const btnIterate = document.getElementById("btnIterate");
 const btnApplyIteration = document.getElementById("btnApplyIteration");
-
 const statusHome = document.getElementById("statusHome");
 const statusViewer = document.getElementById("statusViewer");
 const errorBox = document.getElementById("errorBox");
@@ -59,25 +58,15 @@ async function callMake(promptText) {
   return res.json();
 }
 
-/**
- * Correction de l'envoi à Gemini
- */
 async function getNewPromptFromGemini(imageBase64, userModification) {
-  // 1. NETTOYAGE CRUCIAL : Gemini refuse le préfixe "data:image/png;base64,"
-  // On enlève tout ce qui précède la virgule si présent, sinon on garde tel quel.
-  const cleanBase64 = imageBase64.includes(",") 
-    ? imageBase64.split(",")[1] 
-    : imageBase64;
-
-  const systemPrompt = `You are an AI design assistant for Alstom. 
-Analyze the provided image and the user's request: "${userModification}". 
-Write a new, highly detailed image generation prompt in English that modifies the image as requested while keeping the same photorealistic style and composition. 
-Output ONLY the new prompt text.`;
+  // NETTOYAGE STRICT DU BASE64
+  // On retire le header 'data:image/png;base64,' s'il est présent
+  const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpeg|webp|jpg);base64,/, "");
 
   const payload = {
     contents: [{
       parts: [
-        { text: systemPrompt },
+        { text: `You are a design expert. Based on this image, create a new detailed English prompt to: ${userModification}. Style: Photorealistic, cinematic. Output ONLY the prompt.` },
         { 
           inline_data: { 
             mime_type: "image/png", 
@@ -85,7 +74,13 @@ Output ONLY the new prompt text.`;
           } 
         }
       ]
-    }]
+    }],
+    safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+    ]
   };
 
   const response = await fetch(GEMINI_API_URL, {
@@ -94,16 +89,18 @@ Output ONLY the new prompt text.`;
     body: JSON.stringify(payload)
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    const errorDetail = await response.json();
-    console.error("Gemini API Error Detail:", errorDetail);
-    throw new Error(errorDetail.error?.message || "Gemini rejection (400)");
+    // On affiche l'erreur REELLE dans la console pour débugger
+    console.error("FULL GEMINI ERROR:", data);
+    const reason = data.error?.message || "Unknown error";
+    throw new Error(`Gemini rejected: ${reason}`);
   }
 
-  const data = await response.json();
-  
   if (!data.candidates || !data.candidates[0].content) {
-    throw new Error("Gemini blocked the response (safety filters).");
+    console.warn("Gemini Safety Filter triggered:", data);
+    throw new Error("Content blocked by safety filters. Try another request.");
   }
 
   return data.candidates[0].content.parts[0].text;
@@ -120,9 +117,8 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
       viewerSection.classList.remove("hidden");
     }
 
-    setStatus(isIteration ? "Applying changes..." : "Generating...");
+    setStatus(isIteration ? "Updating..." : "Generating...");
     
-    // UI Loading State
     skeleton.classList.remove("hidden");
     imgBlur.classList.add("hidden");
     imgFinal.classList.add("hidden");
@@ -132,15 +128,12 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     btnGenerate.disabled = true;
     btnApplyIteration.disabled = true;
 
-    // 1. Appel Make
     const result = await callMake(promptToUse);
-    if (result.status !== "ok") throw new Error("Make returned an error.");
+    if (result.status !== "ok") throw new Error("Make error.");
 
-    // Sauvegarde pour Gemini et pour l'affichage
     currentRawBase64 = result.image_base64; 
     currentFullDataUrl = `data:${result.mime_type};base64,${result.image_base64}`;
 
-    // 2. Affichage Progressif
     imgBlur.src = currentFullDataUrl;
     imgBlur.classList.remove("hidden");
     imgFinal.src = currentFullDataUrl;
@@ -149,20 +142,15 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
       skeleton.classList.add("hidden");
       imgBlur.classList.add("hidden");
       imgFinal.classList.remove("hidden");
-      
       setTimeout(() => {
         imgFinal.classList.add("reveal");
         logoOverlay.classList.remove("hidden");
       }, 50);
     };
 
-    if (imgFinal.complete) {
-      revealImage();
-    } else {
-      imgFinal.onload = revealImage;
-    }
+    if (imgFinal.complete) revealImage();
+    else imgFinal.onload = revealImage;
 
-    // 3. Update UI
     setStatus("Done.");
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
@@ -171,9 +159,9 @@ async function runGenerationProcess(promptToUse, isIteration = false) {
     if (isIteration) iterationPromptInput.value = "";
 
   } catch (err) {
-    console.error(err);
+    console.error("Process Error:", err);
     showError(err.message);
-    setStatus("Error occurred.");
+    setStatus("Error.");
   } finally {
     btnGenerate.disabled = false;
     btnApplyIteration.disabled = false;
@@ -199,15 +187,10 @@ btnApplyIteration.addEventListener("click", async () => {
   try {
     setStatus("Gemini is thinking...");
     btnApplyIteration.disabled = true;
-    
-    // On passe l'image brute (base64) à Gemini
     const newPrompt = await getNewPromptFromGemini(currentRawBase64, modifText);
-    console.log("Gemini created this prompt:", newPrompt);
-    
-    // On relance le processus avec le prompt amélioré par Gemini
     await runGenerationProcess(newPrompt, true);
   } catch (err) {
-    showError("Gemini analysis failed: " + err.message);
+    showError(err.message);
   } finally {
     btnApplyIteration.disabled = false;
   }
@@ -217,7 +200,7 @@ function downloadImage() {
   if (!currentFullDataUrl) return;
   const a = document.createElement("a");
   a.href = currentFullDataUrl;
-  a.download = `alstom-concept-${Date.now()}.png`;
+  a.download = `alstom-${Date.now()}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -226,5 +209,4 @@ function downloadImage() {
 btnDownload.addEventListener("click", downloadImage);
 btnDownloadTop.addEventListener("click", downloadImage);
 
-// Init
 setStatus("Ready.");
