@@ -1,50 +1,47 @@
 // ============================================================
-//  ALSTOM SHOWROOM — app.js (COMPLET)
+//  ALSTOM SHOWROOM — app.js
 //  • Génération initiale → Make.com webhook
-//  • Itération (Image-to-Image) → API Gemini directe
+//  • Itération Image-to-Image → Gemini 3 Pro Image (Nano Banana Pro)
 // ============================================================
 
 // ================== CONFIGURATION ==================
 
-// 🔑 Clé API Gemini (tu la changeras plus tard)
 const GEMINI_API_KEY = "AIzaSyAVDwhJP15uz_haf46aJ3NkL2EVdvr_pro";
+const GEMINI_MODEL   = "gemini-3-pro-image-preview";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/"
+                     + GEMINI_MODEL
+                     + ":generateContent?key=" + GEMINI_API_KEY;
 
-// ✅ Modèle Gemini qui supporte la génération d'image native
-// gemini-2.0-flash-exp supporte responseModalities: ["IMAGE"]
-const GEMINI_MODEL = "gemini-2.0-flash-exp";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-// 🔗 Ton webhook Make.com pour la PREMIÈRE génération
-// ⚠️ Remplace cette URL par ton vrai webhook Make
+// 🔗 Webhook Make.com — remplace par ton vrai URL
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
 
 // ================== UI ELEMENTS ==================
 
-const home            = document.getElementById("home");
-const viewer          = document.getElementById("viewer");
-const idea            = document.getElementById("idea");
-const btnGenerate     = document.getElementById("btnGenerate");
-const statusHome      = document.getElementById("statusHome");
-const statusViewer    = document.getElementById("statusViewer");
-const skeleton        = document.getElementById("skeleton");
-const imgBlur         = document.getElementById("imgBlur");
-const imgFinal        = document.getElementById("imgFinal");
-const logoOverlay     = document.getElementById("logoOverlay");
-const canvas          = document.getElementById("canvas");
-const btnDownload     = document.getElementById("btnDownload");
-const btnDownloadTop  = document.getElementById("btnDownloadTop");
-const btnIterate      = document.getElementById("btnIterate");
-const iterationZone   = document.getElementById("iterationZone");
-const iterationPrompt = document.getElementById("iterationPrompt");
-const btnApplyIteration = document.getElementById("btnApplyIteration");
-const errorBox        = document.getElementById("errorBox");
+var home            = document.getElementById("home");
+var viewer          = document.getElementById("viewer");
+var idea            = document.getElementById("idea");
+var btnGenerate     = document.getElementById("btnGenerate");
+var statusHome      = document.getElementById("statusHome");
+var statusViewer    = document.getElementById("statusViewer");
+var skeleton        = document.getElementById("skeleton");
+var imgBlur         = document.getElementById("imgBlur");
+var imgFinal        = document.getElementById("imgFinal");
+var logoOverlay     = document.getElementById("logoOverlay");
+var canvas          = document.getElementById("canvas");
+var btnDownload     = document.getElementById("btnDownload");
+var btnDownloadTop  = document.getElementById("btnDownloadTop");
+var btnIterate      = document.getElementById("btnIterate");
+var iterationZone   = document.getElementById("iterationZone");
+var iterationPrompt = document.getElementById("iterationPrompt");
+var btnApplyIteration = document.getElementById("btnApplyIteration");
+var errorBox        = document.getElementById("errorBox");
 
 // ================== STATE ==================
 
-let currentRawBase64   = null;   // base64 brut (sans prefix data:...)
-let currentFullDataUrl = null;   // data:image/png;base64,...
-let originalPrompt     = "";     // le prompt initial (pour contexte)
-let sessionId          = generateSessionId();
+var currentRawBase64   = null;
+var currentFullDataUrl = null;
+var originalPrompt     = "";
+var sessionId          = generateSessionId();
 
 // ================== HELPERS ==================
 
@@ -52,13 +49,14 @@ function generateSessionId() {
   return "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 }
 
-function setStatus(msg, target = "both") {
+function setStatus(msg, target) {
+  if (!target) target = "both";
   if (target === "home" || target === "both") statusHome.textContent = msg;
   if (target === "viewer" || target === "both") statusViewer.textContent = msg;
 }
 
 function showError(msg) {
-  errorBox.textContent = "❌ " + msg;
+  errorBox.textContent = "\u274c " + msg;
   errorBox.classList.remove("hidden");
 }
 
@@ -67,20 +65,9 @@ function clearError() {
   errorBox.classList.add("hidden");
 }
 
-function showHome() {
-  home.classList.remove("hidden");
-  viewer.classList.add("hidden");
-}
-
-function showViewer() {
-  home.classList.add("hidden");
-  viewer.classList.remove("hidden");
-}
-
 function setLoading(isLoading) {
   btnGenerate.disabled = isLoading;
   btnApplyIteration.disabled = isLoading;
-
   if (isLoading) {
     skeleton.classList.remove("hidden");
     imgFinal.classList.add("hidden");
@@ -96,69 +83,50 @@ function setLoading(isLoading) {
 
 function showFinalImage(base64Data) {
   currentRawBase64 = base64Data;
-  currentFullDataUrl = `data:image/png;base64,${base64Data}`;
+  currentFullDataUrl = "data:image/png;base64," + base64Data;
 
-  // Afficher le blur en premier (effet visuel)
   imgBlur.src = currentFullDataUrl;
   imgBlur.classList.remove("hidden");
 
-  // Puis l'image finale
   imgFinal.src = currentFullDataUrl;
-  imgFinal.onload = () => {
+  imgFinal.onload = function () {
     skeleton.classList.add("hidden");
     imgBlur.classList.add("hidden");
     imgFinal.classList.remove("hidden");
-
-    // Petit délai pour l'animation reveal
-    requestAnimationFrame(() => {
+    requestAnimationFrame(function () {
       imgFinal.classList.add("reveal");
     });
-
-    // Afficher les boutons
     logoOverlay.classList.remove("hidden");
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
     btnIterate.classList.remove("hidden");
-
     setStatus("Image ready.", "viewer");
   };
 }
 
-// ================== DOWNLOAD (avec logo overlay) ==================
+// ================== DOWNLOAD ==================
 
 function downloadImage() {
   if (!currentFullDataUrl) return;
-
-  const img = new Image();
+  var img = new Image();
   img.crossOrigin = "anonymous";
   img.src = currentFullDataUrl;
-
-  img.onload = () => {
+  img.onload = function () {
     canvas.width  = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext("2d");
-
-    // Dessiner l'image
+    var ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
 
-    // Dessiner le logo overlay en bas à droite
-    const logo = document.getElementById("logo");
+    var logo = document.getElementById("logo");
     if (logo && logo.naturalWidth > 0) {
-      const logoW = Math.round(img.naturalWidth * 0.12);
-      const logoH = Math.round(logoW * (logo.naturalHeight / logo.naturalWidth));
-      const margin = Math.round(img.naturalWidth * 0.02);
-      ctx.drawImage(
-        logo,
-        img.naturalWidth - logoW - margin,
-        img.naturalHeight - logoH - margin,
-        logoW,
-        logoH
-      );
+      var logoW  = Math.round(img.naturalWidth * 0.12);
+      var logoH  = Math.round(logoW * (logo.naturalHeight / logo.naturalWidth));
+      var margin = Math.round(img.naturalWidth * 0.02);
+      ctx.drawImage(logo, img.naturalWidth - logoW - margin, img.naturalHeight - logoH - margin, logoW, logoH);
     }
 
-    // Télécharger
-    const link = document.createElement("a");
-    link.download = `alstom-concept-${Date.now()}.png`;
+    var link = document.createElement("a");
+    link.download = "alstom-concept-" + Date.now() + ".png";
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
@@ -169,110 +137,95 @@ function downloadImage() {
 // ================================================================
 
 async function callMakeWebhook(promptText) {
-  const payload = {
-    idea: promptText,
-    mode: "new",
-    session_id: sessionId,
-  };
-
-  const response = await fetch(MAKE_WEBHOOK_URL, {
+  var response = await fetch(MAKE_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ idea: promptText, mode: "new", session_id: sessionId }),
   });
-
   if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Make webhook error (${response.status}): ${errText}`);
+    var errText = await response.text();
+    throw new Error("Make webhook error (" + response.status + "): " + errText);
   }
-
-  const data = await response.json();
-
+  var data = await response.json();
   if (data.status !== "ok" || !data.image_base64) {
     throw new Error("Make webhook returned no image. Check your scenario.");
   }
-
   return data.image_base64;
 }
 
 // ================================================================
-//  2) ITÉRATION IMAGE-TO-IMAGE → API Gemini directe (PAS de Make)
+//  2) ITÉRATION → Gemini 3 Pro Image (Nano Banana Pro)
 // ================================================================
 
 async function callGeminiIteration(currentBase64, instruction) {
-  // Nettoyer le base64 (enlever le prefix si présent)
-  const cleanBase64 = currentBase64.replace(
-    /^data:image\/(png|jpeg|webp);base64,/,
-    ""
-  );
+  var cleanBase64 = currentBase64.replace(/^data:image\/(png|jpeg|webp);base64,/, "");
 
-  const payload = {
-    contents: [
-      {
-        parts: [
-          {
-            text: [
-              "You are modifying an existing image for Alstom (railway manufacturer).",
-              "",
-              "INSTRUCTION: " + instruction,
-              "",
-              "RULES:",
-              "- Keep the EXACT same composition, structure, and perspective",
-              "- Only apply the requested modification",
-              "- Maintain photorealistic, professional, cinematic quality",
-              "- Do NOT recreate the image from scratch — EDIT the existing one",
-            ].join("\n"),
-          },
-          {
-            inline_data: {
-              mime_type: "image/png",
-              data: cleanBase64,
-            },
-          },
-        ],
-      },
-    ],
+  var payload = {
+    contents: [{
+      parts: [
+        {
+          inline_data: {
+            mime_type: "image/png",
+            data: cleanBase64
+          }
+        },
+        {
+          text:
+            "Modify this existing image for Alstom (railway manufacturer).\n\n" +
+            "INSTRUCTION: " + instruction + "\n\n" +
+            "RULES:\n" +
+            "- Keep the EXACT same composition, structure, perspective and background\n" +
+            "- Only apply the requested modification, nothing else\n" +
+            "- Maintain photorealistic, professional, cinematic quality\n" +
+            "- Do NOT recreate from scratch \u2014 EDIT the existing image"
+        }
+      ]
+    }],
     generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"],
-    },
+      responseModalities: ["TEXT", "IMAGE"]
+    }
   };
 
-  const response = await fetch(GEMINI_API_URL, {
+  console.log("\ud83d\udce1 Calling Gemini:", GEMINI_MODEL);
+
+  var response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  var data = await response.json();
 
   if (!response.ok) {
     console.error("Gemini API Error:", data);
-    const msg = data.error?.message || "Gemini error (" + response.status + ")";
-    throw new Error(msg);
+    throw new Error((data.error && data.error.message) || ("Gemini error " + response.status));
   }
 
-  // Chercher la partie image dans la réponse
-  const candidates = data.candidates || [];
-  for (const candidate of candidates) {
-    const parts = candidate.content?.parts || [];
-    for (const part of parts) {
-      if (part.inline_data && part.inline_data.data) {
-        return part.inline_data.data; // base64 brut
+  // Extraire l'image de la réponse
+  var candidates = data.candidates || [];
+  for (var c = 0; c < candidates.length; c++) {
+    var parts = (candidates[c].content && candidates[c].content.parts) || [];
+    for (var p = 0; p < parts.length; p++) {
+      if (parts[p].inline_data && parts[p].inline_data.data) {
+        console.log("\u2705 Image received from Gemini");
+        return parts[p].inline_data.data;
       }
     }
   }
 
-  // Pas d'image trouvée — récupérer le texte pour debug
-  const textParts = candidates
-    .flatMap((c) => c.content?.parts || [])
-    .filter((p) => p.text)
-    .map((p) => p.text)
-    .join(" ");
+  // Pas d'image → debug
+  var debugText = "";
+  for (var c2 = 0; c2 < candidates.length; c2++) {
+    var parts2 = (candidates[c2].content && candidates[c2].content.parts) || [];
+    for (var p2 = 0; p2 < parts2.length; p2++) {
+      if (parts2[p2].text) debugText += parts2[p2].text + " ";
+    }
+  }
 
   throw new Error(
-    textParts
-      ? 'Gemini did not return an image. Response: "' + textParts.slice(0, 200) + '"'
-      : "Gemini returned no image. The model may have refused due to safety filters."
+    debugText
+      ? "Gemini returned text instead of image: \"" + debugText.slice(0, 300) + "\""
+      : "Gemini returned no image. Safety filters may have blocked the request."
   );
 }
 
@@ -281,19 +234,18 @@ async function callGeminiIteration(currentBase64, instruction) {
 // ================================================================
 
 async function handleGenerate() {
-  const prompt = idea.value.trim();
+  var prompt = idea.value.trim();
   if (!prompt) return;
-
   originalPrompt = prompt;
   sessionId = generateSessionId();
 
   try {
     clearError();
-    showViewer();
+    home.classList.add("hidden");
+    viewer.classList.remove("hidden");
     setLoading(true);
-    setStatus("⏳ Generating via Make.com…", "viewer");
-
-    const base64 = await callMakeWebhook(prompt);
+    setStatus("\u23f3 Generating via Make.com\u2026", "viewer");
+    var base64 = await callMakeWebhook(prompt);
     showFinalImage(base64);
   } catch (err) {
     console.error("Generation error:", err);
@@ -304,7 +256,7 @@ async function handleGenerate() {
 }
 
 async function handleIteration() {
-  const instruction = iterationPrompt.value.trim();
+  var instruction = iterationPrompt.value.trim();
   if (!instruction) return;
   if (!currentRawBase64) {
     showError("No base image available for iteration.");
@@ -314,19 +266,15 @@ async function handleIteration() {
   try {
     clearError();
     setLoading(true);
-    setStatus("⏳ Iterating via Gemini API (Image-to-Image)…", "viewer");
-
-    const newBase64 = await callGeminiIteration(currentRawBase64, instruction);
+    setStatus("\u23f3 Iterating via " + GEMINI_MODEL + "\u2026", "viewer");
+    var newBase64 = await callGeminiIteration(currentRawBase64, instruction);
     showFinalImage(newBase64);
-
-    // Reset iteration input
     iterationPrompt.value = "";
   } catch (err) {
     console.error("Iteration error:", err);
     showError(err.message);
     setStatus("Iteration failed.", "viewer");
     skeleton.classList.add("hidden");
-    // Ré-afficher l'image précédente si disponible
     if (currentFullDataUrl) {
       imgFinal.classList.remove("hidden");
       imgFinal.classList.add("reveal");
@@ -341,50 +289,33 @@ async function handleIteration() {
 //  EVENT LISTENERS
 // ================================================================
 
-// Bouton "Generate" (page d'accueil)
 btnGenerate.addEventListener("click", handleGenerate);
 
-// Entrée dans le champ idea (sauf Shift+Enter pour retour à la ligne)
-idea.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    handleGenerate();
-  }
+idea.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); }
 });
 
-// Bouton "✨ Modify Image" → affiche/masque la zone d'itération
-btnIterate.addEventListener("click", () => {
+btnIterate.addEventListener("click", function () {
   iterationZone.classList.toggle("hidden");
-  if (!iterationZone.classList.contains("hidden")) {
-    iterationPrompt.focus();
-  }
+  if (!iterationZone.classList.contains("hidden")) iterationPrompt.focus();
 });
 
-// Bouton "Apply" (itération)
 btnApplyIteration.addEventListener("click", handleIteration);
 
-// Entrée dans le champ d'itération
-iterationPrompt.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    handleIteration();
-  }
+iterationPrompt.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleIteration(); }
 });
 
-// Boutons Download
 btnDownload.addEventListener("click", downloadImage);
 btnDownloadTop.addEventListener("click", downloadImage);
 
-// Auto-resize des textareas
-[idea, iterationPrompt].forEach((textarea) => {
-  textarea.addEventListener("input", () => {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
+[idea, iterationPrompt].forEach(function (ta) {
+  ta.addEventListener("input", function () {
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
   });
 });
 
 // ================================================================
-//  INIT
-// ================================================================
 setStatus("Ready.", "home");
-console.log("✅ Alstom Showroom — app.js loaded");
+console.log("\u2705 Alstom Showroom | Iteration model: " + GEMINI_MODEL);
