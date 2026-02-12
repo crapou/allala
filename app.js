@@ -5,7 +5,7 @@
 // ============================================================
 
 // ⚠️ REMPLACE cette URL par l'URL de ton backend sur Render
-const PROXY_URL = "https://alstom-proxy.onrender.cohttps://alstom-proxy.onrender.com";
+const PROXY_URL = "https://alstom-proxy.onrender.com";
 
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
 
