@@ -1,5 +1,5 @@
 // ============================================================
-//  ALSTOM SHOWROOM — app.js (DEBUG VERSION)
+//  ALSTOM SHOWROOM — app.js (FINAL)
 //  • Génération initiale → Make.com webhook
 //  • Itération Image-to-Image → Gemini 3 Pro Image (Nano Banana Pro)
 // ============================================================
@@ -64,7 +64,6 @@ function clearError() {
 
 function setLoading(isLoading) {
   btnGenerate.disabled = isLoading;
-  btnApplyIteration.disabled = isLoading;
   if (isLoading) {
     skeleton.classList.remove("hidden");
     imgFinal.classList.add("hidden");
@@ -75,6 +74,7 @@ function setLoading(isLoading) {
     btnDownloadTop.disabled = true;
     btnIterate.classList.add("hidden");
     iterationZone.classList.add("hidden");
+    btnApplyIteration.disabled = true;
   }
 }
 
@@ -97,6 +97,10 @@ function showFinalImage(base64Data) {
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
     btnIterate.classList.remove("hidden");
+
+    // ✅ Réactiver le bouton Apply quand l'image est prête
+    btnApplyIteration.disabled = false;
+
     setStatus("Image ready.", "viewer");
   };
 }
@@ -155,9 +159,6 @@ async function callMakeWebhook(promptText) {
 async function callGeminiIteration(currentBase64, instruction) {
   var cleanBase64 = currentBase64.replace(/^data:image\/(png|jpeg|webp);base64,/, "");
 
-  // ── LOG taille du base64 envoyé ──
-  console.log("BASE64 length being sent:", cleanBase64.length, "chars (~" + Math.round(cleanBase64.length * 0.75 / 1024 / 1024 * 100) / 100 + " MB)");
-
   var payload = {
     contents: [
       {
@@ -183,61 +184,44 @@ async function callGeminiIteration(currentBase64, instruction) {
     }
   };
 
-  console.log("Calling Gemini:", GEMINI_MODEL);
-
   var response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 
-  // ── Lire la réponse brute comme TEXTE d'abord ──
   var rawText = await response.text();
-  
-  // ══════════════════════════════════════════════
-  //  DEBUG : Afficher les 3000 premiers caractères
-  //  de la réponse brute dans une ALERTE
-  //  → COPIE-COLLE ÇA ET ENVOIE-LE MOI
-  // ══════════════════════════════════════════════
-  var debugSnippet = rawText.slice(0, 3000);
-  console.log("GEMINI RAW RESPONSE:", debugSnippet);
-  alert("GEMINI RAW RESPONSE (copie ce texte):\n\n" + debugSnippet);
-
-  // Parser le JSON
   var data;
   try {
     data = JSON.parse(rawText);
   } catch (e) {
-    throw new Error("Gemini returned invalid JSON. Raw: " + rawText.slice(0, 500));
+    throw new Error("Gemini returned invalid JSON.");
   }
 
   if (!response.ok) {
     throw new Error((data.error && data.error.message) || ("Gemini error " + response.status));
   }
 
-  // ── Chercher l'image ──
+  // Chercher l'image (supporte les deux formats: inlineData et inline_data)
   var candidates = data.candidates || [];
   for (var c = 0; c < candidates.length; c++) {
     var parts = (candidates[c].content && candidates[c].content.parts) || [];
     for (var p = 0; p < parts.length; p++) {
-      if (parts[p].inline_data && parts[p].inline_data.data) {
-        return parts[p].inline_data.data;
-      }
       if (parts[p].inlineData && parts[p].inlineData.data) {
         return parts[p].inlineData.data;
+      }
+      if (parts[p].inline_data && parts[p].inline_data.data) {
+        return parts[p].inline_data.data;
       }
     }
   }
 
-  // ── Pas d'image ──
+  // Pas d'image
   var debugText = "";
   var finishReason = "";
-  var blockReason = "";
-  
   if (data.promptFeedback && data.promptFeedback.blockReason) {
-    blockReason = data.promptFeedback.blockReason;
+    throw new Error("Blocked by safety: " + data.promptFeedback.blockReason);
   }
-  
   for (var c2 = 0; c2 < candidates.length; c2++) {
     if (candidates[c2].finishReason) finishReason = candidates[c2].finishReason;
     var parts2 = (candidates[c2].content && candidates[c2].content.parts) || [];
@@ -245,16 +229,10 @@ async function callGeminiIteration(currentBase64, instruction) {
       if (parts2[p2].text) debugText += parts2[p2].text + " ";
     }
   }
-
-  if (blockReason) {
-    throw new Error("Blocked by safety: " + blockReason);
-  }
-  
   if (debugText) {
-    throw new Error("Gemini text only (no image): " + debugText.slice(0, 300) + " [finishReason=" + finishReason + "]");
+    throw new Error("Gemini text only: " + debugText.slice(0, 300));
   }
-
-  throw new Error("Gemini returned no image. Safety filters may have blocked the request. [finishReason=" + finishReason + "]");
+  throw new Error("Gemini returned no image. [finishReason=" + finishReason + "]");
 }
 
 // ================================================================
@@ -309,6 +287,7 @@ async function handleIteration() {
       btnDownload.classList.remove("hidden");
       btnIterate.classList.remove("hidden");
       logoOverlay.classList.remove("hidden");
+      btnApplyIteration.disabled = false;
     }
   }
 }
@@ -323,9 +302,13 @@ idea.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); }
 });
 
+// ✅ Quand on clique "Modify Image" → afficher la zone ET réactiver le bouton Apply
 btnIterate.addEventListener("click", function () {
   iterationZone.classList.toggle("hidden");
-  if (!iterationZone.classList.contains("hidden")) iterationPrompt.focus();
+  if (!iterationZone.classList.contains("hidden")) {
+    btnApplyIteration.disabled = false;
+    iterationPrompt.focus();
+  }
 });
 
 btnApplyIteration.addEventListener("click", handleIteration);
