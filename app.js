@@ -1,10 +1,8 @@
 // ============================================================
-//  ALSTOM SHOWROOM — app.js
+//  ALSTOM SHOWROOM — app.js (DEBUG VERSION)
 //  • Génération initiale → Make.com webhook
 //  • Itération Image-to-Image → Gemini 3 Pro Image (Nano Banana Pro)
 // ============================================================
-
-// ================== CONFIGURATION ==================
 
 const GEMINI_API_KEY = "AIzaSyAVDwhJP15uz_haf46aJ3NkL2EVdvr_pro";
 const GEMINI_MODEL   = "gemini-3-pro-image-preview";
@@ -12,7 +10,6 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
                      + GEMINI_MODEL
                      + ":generateContent?key=" + GEMINI_API_KEY;
 
-// 🔗 Webhook Make.com — remplace par ton vrai URL
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
 
 // ================== UI ELEMENTS ==================
@@ -116,7 +113,6 @@ function downloadImage() {
     canvas.height = img.naturalHeight;
     var ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
-
     var logo = document.getElementById("logo");
     if (logo && logo.naturalWidth > 0) {
       var logoW  = Math.round(img.naturalWidth * 0.12);
@@ -124,7 +120,6 @@ function downloadImage() {
       var margin = Math.round(img.naturalWidth * 0.02);
       ctx.drawImage(logo, img.naturalWidth - logoW - margin, img.naturalHeight - logoH - margin, logoW, logoH);
     }
-
     var link = document.createElement("a");
     link.download = "alstom-concept-" + Date.now() + ".png";
     link.href = canvas.toDataURL("image/png");
@@ -160,33 +155,35 @@ async function callMakeWebhook(promptText) {
 async function callGeminiIteration(currentBase64, instruction) {
   var cleanBase64 = currentBase64.replace(/^data:image\/(png|jpeg|webp);base64,/, "");
 
+  // ── LOG taille du base64 envoyé ──
+  console.log("BASE64 length being sent:", cleanBase64.length, "chars (~" + Math.round(cleanBase64.length * 0.75 / 1024 / 1024 * 100) / 100 + " MB)");
+
   var payload = {
-    contents: [{
-      parts: [
-        {
-          inline_data: {
-            mime_type: "image/png",
-            data: cleanBase64
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inline_data: {
+              mime_type: "image/png",
+              data: cleanBase64
+            }
+          },
+          {
+            text: "Edit this image. Apply ONLY the following modification: " + instruction + ". Keep everything else exactly the same."
           }
-        },
-        {
-          text:
-            "Modify this existing image for Alstom (railway manufacturer).\n\n" +
-            "INSTRUCTION: " + instruction + "\n\n" +
-            "RULES:\n" +
-            "- Keep the EXACT same composition, structure, perspective and background\n" +
-            "- Only apply the requested modification, nothing else\n" +
-            "- Maintain photorealistic, professional, cinematic quality\n" +
-            "- Do NOT recreate from scratch \u2014 EDIT the existing image"
-        }
-      ]
-    }],
+        ]
+      }
+    ],
     generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"]
+      responseModalities: ["TEXT", "IMAGE"],
+      imageConfig: {
+        imageSize: "2K"
+      }
     }
   };
 
-  console.log("\ud83d\udce1 Calling Gemini:", GEMINI_MODEL);
+  console.log("Calling Gemini:", GEMINI_MODEL);
 
   var response = await fetch(GEMINI_API_URL, {
     method: "POST",
@@ -194,39 +191,70 @@ async function callGeminiIteration(currentBase64, instruction) {
     body: JSON.stringify(payload)
   });
 
-  var data = await response.json();
+  // ── Lire la réponse brute comme TEXTE d'abord ──
+  var rawText = await response.text();
+  
+  // ══════════════════════════════════════════════
+  //  DEBUG : Afficher les 3000 premiers caractères
+  //  de la réponse brute dans une ALERTE
+  //  → COPIE-COLLE ÇA ET ENVOIE-LE MOI
+  // ══════════════════════════════════════════════
+  var debugSnippet = rawText.slice(0, 3000);
+  console.log("GEMINI RAW RESPONSE:", debugSnippet);
+  alert("GEMINI RAW RESPONSE (copie ce texte):\n\n" + debugSnippet);
+
+  // Parser le JSON
+  var data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    throw new Error("Gemini returned invalid JSON. Raw: " + rawText.slice(0, 500));
+  }
 
   if (!response.ok) {
-    console.error("Gemini API Error:", data);
     throw new Error((data.error && data.error.message) || ("Gemini error " + response.status));
   }
 
-  // Extraire l'image de la réponse
+  // ── Chercher l'image ──
   var candidates = data.candidates || [];
   for (var c = 0; c < candidates.length; c++) {
     var parts = (candidates[c].content && candidates[c].content.parts) || [];
     for (var p = 0; p < parts.length; p++) {
       if (parts[p].inline_data && parts[p].inline_data.data) {
-        console.log("\u2705 Image received from Gemini");
         return parts[p].inline_data.data;
+      }
+      if (parts[p].inlineData && parts[p].inlineData.data) {
+        return parts[p].inlineData.data;
       }
     }
   }
 
-  // Pas d'image → debug
+  // ── Pas d'image ──
   var debugText = "";
+  var finishReason = "";
+  var blockReason = "";
+  
+  if (data.promptFeedback && data.promptFeedback.blockReason) {
+    blockReason = data.promptFeedback.blockReason;
+  }
+  
   for (var c2 = 0; c2 < candidates.length; c2++) {
+    if (candidates[c2].finishReason) finishReason = candidates[c2].finishReason;
     var parts2 = (candidates[c2].content && candidates[c2].content.parts) || [];
     for (var p2 = 0; p2 < parts2.length; p2++) {
       if (parts2[p2].text) debugText += parts2[p2].text + " ";
     }
   }
 
-  throw new Error(
-    debugText
-      ? "Gemini returned text instead of image: \"" + debugText.slice(0, 300) + "\""
-      : "Gemini returned no image. Safety filters may have blocked the request."
-  );
+  if (blockReason) {
+    throw new Error("Blocked by safety: " + blockReason);
+  }
+  
+  if (debugText) {
+    throw new Error("Gemini text only (no image): " + debugText.slice(0, 300) + " [finishReason=" + finishReason + "]");
+  }
+
+  throw new Error("Gemini returned no image. Safety filters may have blocked the request. [finishReason=" + finishReason + "]");
 }
 
 // ================================================================
