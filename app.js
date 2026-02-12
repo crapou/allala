@@ -1,14 +1,11 @@
 // ============================================================
-//  ALSTOM SHOWROOM — app.js (FINAL)
+//  ALSTOM SHOWROOM — app.js (SÉCURISÉ)
 //  • Génération initiale → Make.com webhook
-//  • Itération Image-to-Image → Gemini 3 Pro Image (Nano Banana Pro)
+//  • Itération Image-to-Image → Proxy backend (clé cachée)
 // ============================================================
 
-const GEMINI_API_KEY = "AIzaSyAVDwhJP15uz_haf46aJ3NkL2EVdvr_pro";
-const GEMINI_MODEL   = "gemini-3-pro-image-preview";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/"
-                     + GEMINI_MODEL
-                     + ":generateContent?key=" + GEMINI_API_KEY;
+// ⚠️ REMPLACE cette URL par l'URL de ton backend sur Render
+const PROXY_URL = "https://alstom-proxy.onrender.cohttps://alstom-proxy.onrender.com";
 
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/cyfu356g7x4ahx89k5n4w2nq6hjp8is5";
 
@@ -97,10 +94,7 @@ function showFinalImage(base64Data) {
     btnDownload.classList.remove("hidden");
     btnDownloadTop.disabled = false;
     btnIterate.classList.remove("hidden");
-
-    // ✅ Réactiver le bouton Apply quand l'image est prête
     btnApplyIteration.disabled = false;
-
     setStatus("Image ready.", "viewer");
   };
 }
@@ -153,86 +147,32 @@ async function callMakeWebhook(promptText) {
 }
 
 // ================================================================
-//  2) ITÉRATION → Gemini 3 Pro Image (Nano Banana Pro)
+//  2) ITÉRATION → Proxy Backend (clé API cachée côté serveur)
 // ================================================================
 
 async function callGeminiIteration(currentBase64, instruction) {
   var cleanBase64 = currentBase64.replace(/^data:image\/(png|jpeg|webp);base64,/, "");
 
-  var payload = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inline_data: {
-              mime_type: "image/png",
-              data: cleanBase64
-            }
-          },
-          {
-            text: "Edit this image. Apply ONLY the following modification: " + instruction + ". Keep everything else exactly the same."
-          }
-        ]
-      }
-    ],
-    generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"],
-      imageConfig: {
-        imageSize: "2K"
-      }
-    }
-  };
-
-  var response = await fetch(GEMINI_API_URL, {
+  var response = await fetch(PROXY_URL + "/api/iterate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      imageBase64: cleanBase64,
+      instruction: instruction
+    })
   });
 
-  var rawText = await response.text();
-  var data;
-  try {
-    data = JSON.parse(rawText);
-  } catch (e) {
-    throw new Error("Gemini returned invalid JSON.");
-  }
+  var data = await response.json();
 
   if (!response.ok) {
-    throw new Error((data.error && data.error.message) || ("Gemini error " + response.status));
+    throw new Error(data.error || "Proxy error " + response.status);
   }
 
-  // Chercher l'image (supporte les deux formats: inlineData et inline_data)
-  var candidates = data.candidates || [];
-  for (var c = 0; c < candidates.length; c++) {
-    var parts = (candidates[c].content && candidates[c].content.parts) || [];
-    for (var p = 0; p < parts.length; p++) {
-      if (parts[p].inlineData && parts[p].inlineData.data) {
-        return parts[p].inlineData.data;
-      }
-      if (parts[p].inline_data && parts[p].inline_data.data) {
-        return parts[p].inline_data.data;
-      }
-    }
+  if (!data.image_base64) {
+    throw new Error("Proxy returned no image.");
   }
 
-  // Pas d'image
-  var debugText = "";
-  var finishReason = "";
-  if (data.promptFeedback && data.promptFeedback.blockReason) {
-    throw new Error("Blocked by safety: " + data.promptFeedback.blockReason);
-  }
-  for (var c2 = 0; c2 < candidates.length; c2++) {
-    if (candidates[c2].finishReason) finishReason = candidates[c2].finishReason;
-    var parts2 = (candidates[c2].content && candidates[c2].content.parts) || [];
-    for (var p2 = 0; p2 < parts2.length; p2++) {
-      if (parts2[p2].text) debugText += parts2[p2].text + " ";
-    }
-  }
-  if (debugText) {
-    throw new Error("Gemini text only: " + debugText.slice(0, 300));
-  }
-  throw new Error("Gemini returned no image. [finishReason=" + finishReason + "]");
+  return data.image_base64;
 }
 
 // ================================================================
@@ -272,7 +212,7 @@ async function handleIteration() {
   try {
     clearError();
     setLoading(true);
-    setStatus("\u23f3 Iterating via " + GEMINI_MODEL + "\u2026", "viewer");
+    setStatus("\u23f3 Iterating via proxy\u2026", "viewer");
     var newBase64 = await callGeminiIteration(currentRawBase64, instruction);
     showFinalImage(newBase64);
     iterationPrompt.value = "";
@@ -302,7 +242,6 @@ idea.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); }
 });
 
-// ✅ Quand on clique "Modify Image" → afficher la zone ET réactiver le bouton Apply
 btnIterate.addEventListener("click", function () {
   iterationZone.classList.toggle("hidden");
   if (!iterationZone.classList.contains("hidden")) {
@@ -329,4 +268,4 @@ btnDownloadTop.addEventListener("click", downloadImage);
 
 // ================================================================
 setStatus("Ready.", "home");
-console.log("\u2705 Alstom Showroom | Iteration model: " + GEMINI_MODEL);
+console.log("\u2705 Alstom Showroom | Iterations via secure proxy");
