@@ -1,0 +1,22 @@
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Vignette overlay for depth */
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(5,7,11,0.7) 100%);
+  z-index: 2;
+  pointer-events: none;
+}

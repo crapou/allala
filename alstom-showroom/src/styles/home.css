@@ -1,0 +1,79 @@
+.home {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.home-inner {
+  width: min(920px, 94vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 22px;
+}
+.home-logo {
+  width: min(550px, 80vw);
+  height: auto;
+  filter:
+    drop-shadow(0 20px 60px rgba(0,0,0,0.5))
+    drop-shadow(0 0 40px rgba(47,123,246,0.2));
+  margin-bottom: 12px;
+}
+.home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(47,123,246,0.08);
+  border: 1px solid rgba(47,123,246,0.20);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+  letter-spacing: -0.01em;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: dotPulse 3s ease-in-out infinite;
+}
+
+.home-h1 {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.65) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin: 0;
+}
+
+.home-status {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  min-height: 20px;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .home { padding: 24px 16px; }
+  .home-h1 { font-size: clamp(28px, 7vw, 42px); }
+  .home-p { font-size: 14px; }
+}
