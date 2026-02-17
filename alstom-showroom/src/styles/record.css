@@ -1,0 +1,363 @@
+.record {
+  min-height: calc(100vh - 64px);
+  padding: 32px 24px 80px;
+}
+
+.record-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-back {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-body);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.record-back:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+.record-title { font-size: 22px; font-weight: 700; color: var(--text); margin: 0; }
+.record-duration { font-size: 18px; font-family: var(--font-mono); color: var(--text-muted); }
+
+/* ===== LAYOUT ===== */
+.record-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 16px;
+}
+
+/* Camera — 16:9 ratio */
+.record-camera-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.record-camera {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.record-camera-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  color: #ef4444;
+  font-size: 14px;
+  text-align: center;
+}
+
+.record-live-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(239,68,68,0.85);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: white;
+}
+
+.record-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  animation: recordPulse 1s ease-in-out infinite;
+}
+
+@keyframes recordPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Teleprompter — match camera height */
+.record-tele-wrap {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  max-height: calc((1100px * 1.3 / 2.3) * 9 / 16 + 60px);
+}
+
+.record-tele-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.record-tele-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 0; }
+
+.record-tele-controls { display: flex; align-items: center; gap: 6px; }
+.record-tele-speed-label { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
+.record-tele-speed { width: 50px; accent-color: var(--blue); }
+
+.record-tele-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  scroll-behavior: smooth;
+}
+
+.record-tele-text {
+  font-size: 20px;
+  line-height: 1.7;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.record-tele-spacer { height: 200px; }
+
+.record-ai-btn {
+  margin: 8px 16px 16px;
+  padding: 8px 16px;
+  border: 1px solid rgba(224,86,253,0.25);
+  border-radius: var(--radius-full);
+  background: rgba(224,86,253,0.08);
+  color: #e056fd;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.record-ai-btn:hover:not(:disabled) { background: rgba(224,86,253,0.14); }
+.record-ai-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.record-ai-spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(224,86,253,0.3);
+  border-top-color: #e056fd;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== AVATAR SELECTOR ===== */
+.record-avatars {
+  padding: 20px 24px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius-lg);
+}
+
+.record-avatars-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 14px 0;
+}
+
+.record-avatars-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.record-avatar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.record-avatar-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.15);
+}
+
+.record-avatar-active {
+  border-color: rgba(224,86,253,0.5) !important;
+  background: rgba(224,86,253,0.10) !important;
+  box-shadow: 0 0 20px rgba(224,86,253,0.15);
+}
+
+.record-avatar-icon { font-size: 28px; }
+.record-avatar-label { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
+
+/* ===== CONTROLS ===== */
+.record-controls {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.record-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  color: white;
+  background: linear-gradient(135deg, #e17055, #eb4d4b);
+  box-shadow: 0 10px 40px rgba(235,77,75,0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.record-start-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 50px rgba(235,77,75,0.55);
+}
+
+.record-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.record-start-circle { width: 16px; height: 16px; border-radius: 50%; background: white; }
+
+.record-stop-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 32px;
+  border: 2px solid rgba(239,68,68,0.6);
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  color: white;
+  background: rgba(239,68,68,0.15);
+  cursor: pointer;
+  animation: stopPulse 2s ease-in-out infinite;
+}
+
+@keyframes stopPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+  50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+}
+
+.record-stop-btn:hover { background: rgba(239,68,68,0.25); }
+.record-stop-square { width: 14px; height: 14px; border-radius: 3px; background: #ef4444; }
+
+/* ===== RESULT ===== */
+.record-preview { border-radius: var(--radius-lg); overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+.record-playback { width: 100%; max-height: 480px; background: black; display: block; }
+
+.record-result-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.record-save-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  color: white;
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  box-shadow: 0 8px 32px rgba(0,184,148,0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.record-save-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,184,148,0.5); }
+/* Face detection hints */
+.record-face-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(253,203,110,0.4);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: #fdcb6e;
+  font-family: var(--font-mono);
+  backdrop-filter: blur(8px);
+}
+
+.record-face-ok {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(0,184,148,0.4);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: #00b894;
+  font-family: var(--font-mono);
+  backdrop-filter: blur(8px);
+}
+
+.record-face-status {
+  font-size: 11px;
+  font-weight: 400;
+  color: #00b894;
+  font-family: var(--font-mono);
+}
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .record-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .record-tele-wrap {
+    max-height: 250px;
+  }
+
+  .record-avatars-grid {
+    justify-content: center;
+  }
+
+  .record-result-actions {
+    flex-direction: column;
+  }
+
+  .record-save-btn, .record-result-actions .btn { width: 100%; text-align: center; }
+}

@@ -1,0 +1,380 @@
+.pitch {
+  min-height: calc(100vh - 64px);
+  padding: 40px 24px 80px;
+}
+
+.pitch-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Header */
+.pitch-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pitch-back {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pitch-back:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+
+.pitch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(225,112,85,0.10);
+  border: 1px solid rgba(225,112,85,0.25);
+  font-size: 13px;
+  font-weight: 500;
+  color: #e17055;
+  align-self: flex-start;
+}
+
+.pitch-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e17055;
+  animation: dotPulse 3s ease-in-out infinite;
+}
+
+.pitch-h1 {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin: 0;
+  background: linear-gradient(135deg, #e17055, #fdcb6e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pitch-p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* ===== TIMELINE ===== */
+.pitch-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 20px;
+}
+
+.pitch-timeline-bar {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #e17055, #fdcb6e, #00cec9, #6c5ce7, #e056fd, #0984e3);
+  opacity: 0.3;
+}
+
+/* Step */
+.pitch-step {
+  position: relative;
+  padding: 18px 0 18px 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pitch-step:hover {
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-md);
+}
+
+.pitch-step-active {
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-lg);
+}
+
+.pitch-step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pitch-step-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: absolute;
+  left: 12px;
+}
+
+.pitch-step-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pitch-step-time {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.pitch-step-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.02em;
+}
+
+.pitch-step-icon {
+  font-size: 18px;
+}
+
+.pitch-step-duration {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 4px;
+}
+
+.pitch-step-toggle {
+  font-size: 18px;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+
+/* Detail */
+.pitch-step-detail {
+  margin-top: 14px;
+  padding-left: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pitch-step-instruction {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.pitch-step-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pitch-step-examples-label {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pitch-step-example {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border-left: 2px solid rgba(255,255,255,0.15);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-style: italic;
+}
+
+.pitch-step-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(253,203,110,0.06);
+  border: 1px solid rgba(253,203,110,0.15);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.pitch-tip-icon {
+  flex-shrink: 0;
+}
+
+/* ===== WRITE AREA ===== */
+.pitch-write {
+  padding: 28px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pitch-write-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pitch-write-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.pitch-write-counter {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.pitch-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pitch-textarea::placeholder {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.pitch-textarea:focus {
+  border-color: rgba(225,112,85,0.4);
+  box-shadow: 0 0 0 3px rgba(225,112,85,0.1);
+}
+
+.pitch-write-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pitch-record-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  color: white;
+  background: linear-gradient(135deg, #e17055, #fdcb6e);
+  box-shadow: 0 8px 32px rgba(225,112,85,0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pitch-record-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(225,112,85,0.5);
+}
+
+.pitch-record-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  animation: recordPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes recordPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pitch-record-note {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .pitch-timeline {
+    padding-left: 10px;
+  }
+
+  .pitch-timeline-bar {
+    left: 16px;
+  }
+
+  .pitch-step {
+    padding-left: 24px;
+  }
+
+  .pitch-step-dot {
+    left: 6px;
+  }
+
+  .pitch-step-title {
+    font-size: 15px;
+  }
+
+  .pitch-write {
+    padding: 20px;
+  }
+
+  .pitch-write-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pitch-record-btn {
+    justify-content: center;
+  }
+}
