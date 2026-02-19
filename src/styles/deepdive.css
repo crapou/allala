@@ -7,10 +7,37 @@
 }
 
 .dd-inner {
-  width: min(700px, 94vw);
+  width: min(720px, 94vw);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+}
+
+/* ===== HEADER ===== */
+.dd-header {
+  display: flex;
+  align-items: center;
+}
+
+.dd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(225, 112, 85, 0.08);
+  border: 1px solid rgba(225, 112, 85, 0.20);
+  font-size: 13px;
+  font-weight: 500;
+  color: #e17055;
+}
+
+.dd-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e17055;
+  animation: dotPulse 3s ease-in-out infinite;
 }
 
 /* ===== LOADING ===== */
@@ -20,6 +47,7 @@
   align-items: center;
   text-align: center;
   gap: 20px;
+  max-width: 460px;
 }
 
 .dd-loading-orbs {
@@ -34,18 +62,9 @@
   animation: orbBounce 1.4s ease-in-out infinite;
 }
 
-.dd-orb-1 {
-  background: #6c5ce7;
-  animation-delay: 0s;
-}
-.dd-orb-2 {
-  background: #00cec9;
-  animation-delay: 0.2s;
-}
-.dd-orb-3 {
-  background: #e056fd;
-  animation-delay: 0.4s;
-}
+.dd-orb-1 { background: #e17055; animation-delay: 0s; }
+.dd-orb-2 { background: #00cec9; animation-delay: 0.2s; }
+.dd-orb-3 { background: #6c5ce7; animation-delay: 0.4s; }
 
 @keyframes orbBounce {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
@@ -64,8 +83,45 @@
   font-size: 14px;
   color: var(--text-muted);
   margin: 0;
-  max-width: 400px;
   line-height: 1.5;
+}
+
+.dd-loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.dd-loading-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.dd-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+
+.dd-step-active {
+  color: #e17055;
+}
+
+.dd-step-active .dd-step-dot {
+  background: #e17055;
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+.dd-step-pending {
+  opacity: 0.4;
 }
 
 /* ===== ERROR ===== */
@@ -73,10 +129,74 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
+  text-align: center;
+  max-width: 400px;
+}
+
+.dd-error-icon { font-size: 40px; }
+
+.dd-error-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.dd-error-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dd-error-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.dd-retry-btn {
+  padding: 8px 20px;
+  border: 1px solid rgba(225,112,85,0.3);
+  border-radius: var(--radius-full);
+  background: rgba(225,112,85,0.08);
+  color: #e17055;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dd-retry-btn:hover {
+  background: rgba(225,112,85,0.15);
+}
+
+.dd-back-btn {
+  padding: 8px 20px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-full);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dd-back-btn:hover {
+  background: rgba(255,255,255,0.08);
 }
 
 /* ===== PROGRESS ===== */
+.dd-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .dd-progress-track {
   width: 100%;
   height: 4px;
@@ -87,17 +207,44 @@
 
 .dd-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #6c5ce7, #00cec9, #e056fd);
+  background: linear-gradient(90deg, #e17055, #00cec9, #6c5ce7);
   border-radius: 4px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dd-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .dd-progress-label {
   font-size: 12px;
   font-family: var(--font-mono);
   color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dd-progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dd-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  transition: all 0.3s ease;
+}
+
+.dd-dot-done {
+  background: #00b894;
+}
+
+.dd-dot-current {
+  background: #e17055;
+  box-shadow: 0 0 8px rgba(225,112,85,0.5);
 }
 
 /* ===== CARD ===== */
@@ -105,7 +252,7 @@
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-lg);
-  padding: 36px 32px;
+  padding: 32px 28px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   display: flex;
@@ -141,19 +288,24 @@
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
-  font-family: var(--font-mono);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
   align-self: flex-start;
 }
 
+.dd-tag-icon { font-size: 14px; }
+
+.dd-tag-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .dd-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .dd-subtitle {
@@ -167,13 +319,13 @@
 .dd-input-wrap {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .dd-input {
   width: 100%;
-  min-height: 100px;
+  min-height: 110px;
   padding: 16px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.10);
@@ -193,12 +345,23 @@
 }
 
 .dd-input:focus {
-  border-color: rgba(108,92,231,0.4);
-  box-shadow: 0 0 0 3px rgba(108,92,231,0.1);
+  border-color: rgba(225,112,85,0.4);
+  box-shadow: 0 0 0 3px rgba(225,112,85,0.1);
+}
+
+.dd-input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dd-char-count {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
 }
 
 .dd-send-btn {
-  align-self: flex-end;
   padding: 12px 28px;
   border: none;
   border-radius: var(--radius-full);
@@ -206,15 +369,15 @@
   font-weight: 700;
   font-family: var(--font-body);
   color: white;
-  background: linear-gradient(135deg, #6c5ce7, #00cec9);
-  box-shadow: 0 8px 32px rgba(108,92,231,0.35);
+  background: linear-gradient(135deg, #e17055, #00cec9);
+  box-shadow: 0 8px 32px rgba(225,112,85,0.3);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .dd-send-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(108,92,231,0.5);
+  box-shadow: 0 12px 40px rgba(225,112,85,0.45);
 }
 
 .dd-send-btn:disabled {
@@ -227,6 +390,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.dd-footer-left {
+  flex: 1;
 }
 
 .dd-nav-link {
@@ -247,14 +414,25 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 640px) {
   .dd-card {
-    padding: 28px 20px;
+    padding: 24px 18px;
   }
 
   .dd-title {
-    font-size: 18px;
+    font-size: 17px;
+  }
+
+  .dd-input-footer {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
   }
 
   .dd-send-btn {
     width: 100%;
+    text-align: center;
+  }
+
+  .dd-char-count {
+    text-align: center;
   }
 }

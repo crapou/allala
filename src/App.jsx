@@ -5,6 +5,7 @@ import HomeScreen from './components/HomeScreen'
 import ViewerScreen from './components/ViewerScreen'
 import QuestionsScreen from './components/QuestionsScreen'
 import FeedbackScreen from './components/FeedbackScreen'
+import ElaborationScreen from './components/ElaborationScreen'
 import TrendsScreen from './components/TrendsScreen'
 import TrendDetailScreen from './components/TrendDetailScreen'
 import DeepDiveScreen from './components/DeepDiveScreen'
@@ -19,7 +20,10 @@ function generateSessionId() {
 }
 
 export default function App() {
+  // Screen navigation
   const [screen, setScreen] = useState('home')
+
+  // Home / Generation
   const [prompt, setPrompt] = useState('')
   const [homeStatus, setHomeStatus] = useState('')
   const [imageUrl, setImageUrl] = useState(null)
@@ -28,17 +32,20 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sessionId, setSessionId] = useState(generateSessionId)
-  const [folderData, setFolderData] = useState(null)
-  const [aiFeedback, setAiFeedback] = useState(null)
+
+  // Data collected through the flow
+  const [folderData, setFolderData] = useState(null)          // prompt + imageUrl + answers (5 questions)
+  const [aiFeedback, setAiFeedback] = useState(null)          // AI feedback object
+  const [elaborationAnswers, setElaborationAnswers] = useState(null) // elaboration on feedback
+  const [trendReactions, setTrendReactions] = useState({})     // comments on mega-trends
   const [activeTrend, setActiveTrend] = useState(null)
-  const [deepDiveAnswers, setDeepDiveAnswers] = useState(null)
+  const [deepDiveAnswers, setDeepDiveAnswers] = useState(null) // deep dive answers
   const [pitchText, setPitchText] = useState('')
   const [recordingData, setRecordingData] = useState(null)
 
-  // Nav handler - allows jumping to any screen
+  // ========== NAV (skip to any screen) ==========
   const handleNavigate = useCallback((targetScreen) => {
-    // Initialize folderData if jumping ahead without it
-    if (!folderData && ['feedback','trends','deepdive','pitch','record','folder'].includes(targetScreen)) {
+    if (!folderData && ['feedback','elaboration','trends','deepdive','pitch','record','folder'].includes(targetScreen)) {
       setFolderData({
         prompt: prompt || 'Demo project',
         imageUrl: imageUrl,
@@ -50,6 +57,7 @@ export default function App() {
     setScreen(targetScreen)
   }, [folderData, prompt, imageUrl, sessionId])
 
+  // ========== GENERATE ==========
   const handleGenerate = useCallback(async () => {
     const text = prompt.trim()
     if (!text) return
@@ -85,6 +93,7 @@ export default function App() {
     }
   }, [prompt])
 
+  // ========== ITERATE ==========
   const handleIterate = useCallback(async (instruction) => {
     if (!rawBase64) { setError('No base image.'); return }
     setLoading(true)
@@ -112,6 +121,7 @@ export default function App() {
     }
   }, [rawBase64])
 
+  // ========== DOWNLOAD ==========
   const handleDownload = useCallback(() => {
     if (!imageUrl) return
     const a = document.createElement('a')
@@ -120,6 +130,7 @@ export default function App() {
     a.click()
   }, [imageUrl])
 
+  // ========== BACK HOME (reset all) ==========
   const handleBackHome = useCallback(() => {
     setScreen('home')
     setPrompt('')
@@ -129,37 +140,77 @@ export default function App() {
     setViewerStatus('')
     setFolderData(null)
     setAiFeedback(null)
+    setElaborationAnswers(null)
+    setTrendReactions({})
     setDeepDiveAnswers(null)
     setPitchText('')
     setRecordingData(null)
     setActiveTrend(null)
   }, [])
 
+  // ========== FLOW HANDLERS ==========
+
+  // Questions → Feedback
   const handleQuestionsComplete = useCallback((answers) => {
-    setFolderData({ prompt, imageUrl, answers, sessionId, createdAt: new Date().toISOString() })
+    setFolderData({
+      prompt,
+      imageUrl,
+      answers,
+      sessionId,
+      createdAt: new Date().toISOString(),
+    })
     setScreen('feedback')
   }, [prompt, imageUrl, sessionId])
 
+  // Feedback → Elaboration
   const handleFeedbackContinue = useCallback((feedback) => {
     setAiFeedback(feedback)
+    setScreen('elaboration')
+  }, [])
+
+  // Elaboration → Trends
+  const handleElaborationContinue = useCallback((elaborations) => {
+    setElaborationAnswers(elaborations)
     setScreen('trends')
   }, [])
 
+  // Trend detail: save a comment
+  const handleSaveTrendReaction = useCallback((trendId, itemKey, comment) => {
+    setTrendReactions(prev => ({
+      ...prev,
+      [trendId]: { ...prev[trendId], [itemKey]: comment },
+    }))
+  }, [])
+
+  // Trends → read one trend
   const handleReadTrend = useCallback((trendId) => {
     setActiveTrend(trendId)
     setScreen('trendDetail')
   }, [])
 
+  // Deep Dive → Pitch
   const handleDeepDiveComplete = useCallback((answers) => {
     setDeepDiveAnswers(answers)
     setScreen('pitch')
   }, [])
 
+  // Record → Folder
   const handleRecordComplete = useCallback((data) => {
     setRecordingData(data)
     setScreen('folder')
   }, [])
 
+  // ========== BUILD ENRICHED FOLDER DATA FOR DEEP DIVE ==========
+  // This combines all data collected so far into one object for the deep dive API call
+  const enrichedFolderData = folderData ? {
+    ...folderData,
+    elaboration: elaborationAnswers
+      ? elaborationAnswers.map(e => `[${e.type}] "${e.item}" → ${e.answer}`).join(' | ')
+      : '',
+    trendComments: trendReactions,
+  } : null
+
+  // ========== RENDER ==========
   return (
     <>
       <Background />
@@ -170,36 +221,115 @@ export default function App() {
         onNavigate={handleNavigate}
       />
       <main style={{ position: 'relative', zIndex: 5, paddingTop: 64 }}>
+
         {screen === 'home' && (
-          <HomeScreen prompt={prompt} setPrompt={setPrompt} onGenerate={handleGenerate} status={homeStatus} loading={loading} />
+          <HomeScreen
+            prompt={prompt}
+            setPrompt={setPrompt}
+            onGenerate={handleGenerate}
+            status={homeStatus}
+            loading={loading}
+          />
         )}
+
         {screen === 'viewer' && (
-          <ViewerScreen imageUrl={imageUrl} loading={loading} status={viewerStatus} error={error} onIterate={handleIterate} onDownload={handleDownload} onBack={handleBackHome} onCreateFolder={() => setScreen('questions')} />
+          <ViewerScreen
+            imageUrl={imageUrl}
+            loading={loading}
+            status={viewerStatus}
+            error={error}
+            onIterate={handleIterate}
+            onDownload={handleDownload}
+            onBack={handleBackHome}
+            onCreateFolder={() => setScreen('questions')}
+            initialPrompt={prompt}
+          />
         )}
+
         {screen === 'questions' && (
-          <QuestionsScreen onComplete={handleQuestionsComplete} onBack={() => setScreen('viewer')} />
+          <QuestionsScreen
+            onComplete={handleQuestionsComplete}
+            onBack={() => setScreen('viewer')}
+          />
         )}
+
         {screen === 'feedback' && folderData && (
-          <FeedbackScreen folderData={folderData} onContinue={handleFeedbackContinue} onBack={() => setScreen('questions')} />
+          <FeedbackScreen
+            folderData={folderData}
+            onContinue={handleFeedbackContinue}
+            onBack={() => setScreen('questions')}
+          />
         )}
+
+        {screen === 'elaboration' && aiFeedback && (
+          <ElaborationScreen
+            feedback={aiFeedback}
+            onContinue={handleElaborationContinue}
+            onBack={() => setScreen('feedback')}
+          />
+        )}
+
         {screen === 'trends' && (
-          <TrendsScreen onReadTrend={handleReadTrend} onBack={() => setScreen('feedback')} onContinue={() => setScreen('deepdive')} />
+          <TrendsScreen
+            onReadTrend={handleReadTrend}
+            onBack={() => setScreen('elaboration')}
+            onContinue={() => setScreen('deepdive')}
+          />
         )}
+
         {screen === 'trendDetail' && activeTrend && (
-          <TrendDetailScreen trendId={activeTrend} onBack={() => setScreen('trends')} />
+          <TrendDetailScreen
+            trendId={activeTrend}
+            onBack={() => setScreen('trends')}
+            reactions={trendReactions[activeTrend] || {}}
+            onSaveReaction={(itemKey, comment) => handleSaveTrendReaction(activeTrend, itemKey, comment)}
+          />
         )}
-        {screen === 'deepdive' && folderData && (
-          <DeepDiveScreen folderData={folderData} aiFeedback={aiFeedback} onComplete={handleDeepDiveComplete} onBack={() => setScreen('trends')} />
+
+        {screen === 'deepdive' && enrichedFolderData && (
+          <DeepDiveScreen
+            folderData={enrichedFolderData}
+            aiFeedback={aiFeedback}
+            onComplete={handleDeepDiveComplete}
+            onBack={() => setScreen('trends')}
+          />
         )}
+
         {screen === 'pitch' && (
-          <PitchScreen folderData={folderData} onBack={() => setScreen('deepdive')} onRecord={() => setScreen('record')} pitchText={pitchText} setPitchText={setPitchText} />
+          <PitchScreen
+            folderData={folderData}
+            onBack={() => setScreen('deepdive')}
+            onRecord={() => setScreen('record')}
+            pitchText={pitchText}
+            setPitchText={setPitchText}
+          />
         )}
+
         {screen === 'record' && (
-          <RecordScreen pitchText={pitchText} folderData={folderData} aiFeedback={aiFeedback} deepDiveAnswers={deepDiveAnswers} onComplete={handleRecordComplete} onBack={() => setScreen('pitch')} />
+          <RecordScreen
+            pitchText={pitchText}
+            folderData={folderData}
+            aiFeedback={aiFeedback}
+            deepDiveAnswers={deepDiveAnswers}
+            onComplete={handleRecordComplete}
+            onBack={() => setScreen('pitch')}
+          />
         )}
+
         {screen === 'folder' && (
-          <FolderScreen folderData={folderData} aiFeedback={aiFeedback} deepDiveAnswers={deepDiveAnswers} pitchText={pitchText} recordingData={recordingData} onBackHome={handleBackHome} />
+          <FolderScreen
+            folderData={folderData}
+            aiFeedback={aiFeedback}
+            elaborationAnswers={elaborationAnswers}
+            trendReactions={trendReactions}
+            deepDiveAnswers={deepDiveAnswers}
+            pitchText={pitchText}
+            recordingData={recordingData}
+            promptHistory={promptHistory}
+            onBackHome={handleBackHome}
+          />
         )}
+
       </main>
     </>
   )

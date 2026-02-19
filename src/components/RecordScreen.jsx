@@ -353,7 +353,7 @@ export default function RecordScreen({ pitchText, folderData, aiFeedback, deepDi
             <video className="record-playback" src={recordedUrl} controls playsInline />
           </div>
           <div className="record-result-actions fade-up" style={{animationDelay:'0.2s'}}>
-            <button className="btn btn-secondary" onClick={() => window.location.reload()}>🔄 Re-record</button>
+            <button className="btn btn-secondary" onClick={() => { setRecordedBlob(null); setRecordedUrl(null) }}>🔄 Re-record</button>
             <button className="record-save-btn" onClick={() => onComplete({ blob: recordedBlob, url: recordedUrl, duration: recordingTime })}>
               ✅ Save & Create Folder
             </button>

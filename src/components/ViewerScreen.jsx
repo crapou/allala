@@ -11,6 +11,7 @@ export default function ViewerScreen({
   onDownload,
   onBack,
   onCreateFolder,
+  promptHistory = [],
 }) {
   const [iterationPrompt, setIterationPrompt] = useState('')
   const [showIteration, setShowIteration] = useState(false)
@@ -71,6 +72,27 @@ export default function ViewerScreen({
               />
             )}
           </div>
+
+          {/* Chat history */}
+          {promptHistory.length > 0 && (
+            <div className="chat-history">
+              {promptHistory.map((msg, i) => (
+                <div key={i} className="chat-msg">
+                  <div className="chat-msg-label">
+                    {msg.type === 'generate' ? 'Prompt initial' : `Itération ${i}`}
+                  </div>
+                  <div className="chat-msg-bubble">{msg.text}</div>
+                </div>
+              ))}
+              {loading && (
+                <div className="chat-loading">
+                  <span className="chat-loading-dot" />
+                  <span className="chat-loading-dot" />
+                  <span className="chat-loading-dot" />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Create Folder CTA */}
           {imageUrl && !loading && (
