@@ -32,6 +32,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sessionId, setSessionId] = useState(generateSessionId)
+  const [promptHistory, setPromptHistory] = useState([])
 
   // Data collected through the flow
   const [folderData, setFolderData] = useState(null)          // prompt + imageUrl + answers (5 questions)
@@ -67,6 +68,7 @@ export default function App() {
     setImageUrl(null)
     setRawBase64(null)
     setViewerStatus('⏳ Generating image…')
+    setPromptHistory([{ text, type: 'generate' }])
     const newSession = generateSessionId()
     setSessionId(newSession)
     try {
@@ -99,6 +101,7 @@ export default function App() {
     setLoading(true)
     setError(null)
     setViewerStatus('⏳ Iterating…')
+    setPromptHistory(prev => [...prev, { text: instruction, type: 'iterate' }])
     try {
       const clean = rawBase64.replace(/^data:image\/(png|jpeg|webp);base64,/, '')
       const response = await fetch(PROXY_URL + '/api/iterate', {
@@ -134,6 +137,7 @@ export default function App() {
   const handleBackHome = useCallback(() => {
     setScreen('home')
     setPrompt('')
+    setPromptHistory([])
     setImageUrl(null)
     setRawBase64(null)
     setError(null)
@@ -242,7 +246,7 @@ export default function App() {
             onDownload={handleDownload}
             onBack={handleBackHome}
             onCreateFolder={() => setScreen('questions')}
-            initialPrompt={prompt}
+            promptHistory={promptHistory}
           />
         )}
 

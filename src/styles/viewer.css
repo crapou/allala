@@ -90,6 +90,126 @@
   align-items: center;
 }
 
+/* ===== USER IMAGE REFERENCE ===== */
+.viewer-user-image {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(47,123,246,0.06);
+  border-bottom: 1px solid rgba(47,123,246,0.12);
+}
+
+.viewer-user-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.viewer-user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viewer-user-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--blue);
+  letter-spacing: 0.03em;
+}
+
+.viewer-user-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.viewer-user-remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.viewer-user-remove:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.3);
+  color: #ef4444;
+}
+
+/* ===== UPLOAD ZONE IN VIEWER ===== */
+.viewer-upload-zone {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.viewer-upload-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border: 2px dashed rgba(255,255,255,0.10);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.viewer-upload-drop:hover {
+  border-color: rgba(47,123,246,0.3);
+  background: rgba(47,123,246,0.04);
+}
+
+.viewer-upload-icon {
+  font-size: 20px;
+}
+
+.viewer-regen-btn {
+  padding: 10px 20px;
+  border: 1px solid rgba(47,123,246,0.3);
+  border-radius: var(--radius-full);
+  background: rgba(47,123,246,0.08);
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: center;
+}
+
+.viewer-regen-btn:hover {
+  background: rgba(47,123,246,0.15);
+  border-color: rgba(47,123,246,0.4);
+}
+
+.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+
 /* ===== IMAGE FRAME ===== */
 .frame {
   position: relative;
@@ -328,11 +448,13 @@
 
   .viewer-actions {
     width: 100%;
-    flex-direction: column;
+    flex-wrap: wrap;
   }
 
   .viewer-actions .btn {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
   }
 
   .frame {
@@ -358,6 +480,15 @@
 
   .folder-btn-title {
     font-size: 14px;
+  }
+
+  .viewer-user-image {
+    padding: 8px 14px;
+  }
+
+  .viewer-upload-drop {
+    padding: 16px;
+    font-size: 12px;
   }
 }
 
