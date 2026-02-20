@@ -40,12 +40,87 @@
   opacity: 0.5;
 }
 
+.prompt-clip-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.prompt-clip-btn:hover:not(:disabled) {
+  background: rgba(47,123,246,0.12);
+  transform: scale(1.08);
+}
+
+.prompt-clip-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.prompt-attachment {
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.prompt-attachment-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(47,123,246,0.3);
+}
+
+.prompt-attachment-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(239,68,68,0.85);
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.prompt-attachment-remove:hover {
+  background: #ef4444;
+  transform: scale(1.15);
+}
+
 @media (max-width: 640px) {
   .promptbar {
     flex-direction: column;
     gap: 12px;
   }
+
   .promptbar .btn-primary {
     width: 100%;
+  }
+
+  .prompt-clip-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .prompt-attachment-thumb {
+    width: 36px;
+    height: 36px;
   }
 }

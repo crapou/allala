@@ -34,13 +34,16 @@ export default function App() {
   const [sessionId, setSessionId] = useState(generateSessionId)
   const [promptHistory, setPromptHistory] = useState([])
 
+  // User uploaded reference image
+  const [userImage, setUserImage] = useState(null)
+
   // Data collected through the flow
-  const [folderData, setFolderData] = useState(null)          // prompt + imageUrl + answers (5 questions)
-  const [aiFeedback, setAiFeedback] = useState(null)          // AI feedback object
-  const [elaborationAnswers, setElaborationAnswers] = useState(null) // elaboration on feedback
-  const [trendReactions, setTrendReactions] = useState({})     // comments on mega-trends
+  const [folderData, setFolderData] = useState(null)
+  const [aiFeedback, setAiFeedback] = useState(null)
+  const [elaborationAnswers, setElaborationAnswers] = useState(null)
+  const [trendReactions, setTrendReactions] = useState({})
   const [activeTrend, setActiveTrend] = useState(null)
-  const [deepDiveAnswers, setDeepDiveAnswers] = useState(null) // deep dive answers
+  const [deepDiveAnswers, setDeepDiveAnswers] = useState(null)
   const [pitchText, setPitchText] = useState('')
   const [recordingData, setRecordingData] = useState(null)
 
@@ -75,7 +78,10 @@ export default function App() {
       const response = await fetch(PROXY_URL + '/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea: text }),
+        body: JSON.stringify({
+          idea: text,
+          userImage: userImage?.base64 || null,
+        }),
       })
       if (!response.ok) {
         const errText = await response.text()
@@ -93,7 +99,7 @@ export default function App() {
     } finally {
       setLoading(false)
     }
-  }, [prompt])
+  }, [prompt, userImage])
 
   // ========== ITERATE ==========
   const handleIterate = useCallback(async (instruction) => {
@@ -124,6 +130,12 @@ export default function App() {
     }
   }, [rawBase64])
 
+  // ========== REGENERATE (with new user image) ==========
+  const handleRegenerate = useCallback(() => {
+    if (!prompt.trim()) return
+    handleGenerate()
+  }, [prompt, handleGenerate])
+
   // ========== DOWNLOAD ==========
   const handleDownload = useCallback(() => {
     if (!imageUrl) return
@@ -142,6 +154,7 @@ export default function App() {
     setRawBase64(null)
     setError(null)
     setViewerStatus('')
+    setUserImage(null)
     setFolderData(null)
     setAiFeedback(null)
     setElaborationAnswers(null)
@@ -205,7 +218,6 @@ export default function App() {
   }, [])
 
   // ========== BUILD ENRICHED FOLDER DATA FOR DEEP DIVE ==========
-  // This combines all data collected so far into one object for the deep dive API call
   const enrichedFolderData = folderData ? {
     ...folderData,
     elaboration: elaborationAnswers
@@ -233,6 +245,8 @@ export default function App() {
             onGenerate={handleGenerate}
             status={homeStatus}
             loading={loading}
+            userImage={userImage}
+            setUserImage={setUserImage}
           />
         )}
 
@@ -247,6 +261,9 @@ export default function App() {
             onBack={handleBackHome}
             onCreateFolder={() => setScreen('questions')}
             promptHistory={promptHistory}
+            userImage={userImage}
+            setUserImage={setUserImage}
+            onRegenerate={handleRegenerate}
           />
         )}
 
