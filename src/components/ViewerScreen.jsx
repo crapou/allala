@@ -1,5 +1,4 @@
-
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import PromptBar from './PromptBar'
 import '../styles/viewer.css'
 
@@ -12,15 +11,10 @@ export default function ViewerScreen({
   onDownload,
   onBack,
   onCreateFolder,
-  initialPrompt,
-  userImage,
-  setUserImage,
-  onRegenerate,
+  promptHistory = [],
 }) {
   const [iterationPrompt, setIterationPrompt] = useState('')
   const [showIteration, setShowIteration] = useState(false)
-  const [showUpload, setShowUpload] = useState(false)
-  const fileRef = useRef(null)
 
   const handleIterate = () => {
     if (!iterationPrompt.trim()) return
@@ -28,27 +22,10 @@ export default function ViewerScreen({
     setIterationPrompt('')
   }
 
-  const handleNewImage = (file) => {
-    if (!file || !file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1]
-      setUserImage({
-        base64,
-        preview: reader.result,
-        name: file.name,
-        size: (file.size / 1024).toFixed(0) + ' KB',
-      })
-      setShowUpload(false)
-    }
-    reader.readAsDataURL(file)
-  }
-
   return (
     <section className="viewer fade-in">
       <div className="viewer-inner">
         <div className="viewer-card">
-          {/* Header bar */}
           <div className="viewer-head">
             <div className="viewer-meta">
               <button className="btn-back" onClick={onBack}>← Back</button>
@@ -60,12 +37,6 @@ export default function ViewerScreen({
             <div className="viewer-actions">
               {imageUrl && !loading && (
                 <>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setShowUpload(!showUpload)}
-                  >
-                    📎 Add Image
-                  </button>
                   <button
                     className="btn btn-secondary"
                     onClick={() => setShowIteration(!showIteration)}
@@ -80,46 +51,6 @@ export default function ViewerScreen({
             </div>
           </div>
 
-          {/* User image preview (if uploaded) */}
-          {userImage && (
-            <div className="viewer-user-image">
-              <img className="viewer-user-thumb" src={userImage.preview} alt="Reference" />
-              <div className="viewer-user-info">
-                <span className="viewer-user-label">📎 Reference image</span>
-                <span className="viewer-user-name">{userImage.name}</span>
-              </div>
-              <button className="viewer-user-remove" onClick={() => setUserImage(null)}>✕</button>
-            </div>
-          )}
-
-          {/* Upload zone in viewer */}
-          {showUpload && (
-            <div className="viewer-upload-zone fade-up">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleNewImage(e.target.files[0])}
-                style={{ display: 'none' }}
-              />
-              <div
-                className="viewer-upload-drop"
-                onClick={() => fileRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); handleNewImage(e.dataTransfer.files[0]) }}
-              >
-                <span className="viewer-upload-icon">📎</span>
-                <span>Drop a reference image or click to browse</span>
-              </div>
-              {userImage && onRegenerate && (
-                <button className="viewer-regen-btn" onClick={onRegenerate}>
-                  🔄 Regenerate with this image
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Image frame */}
           <div className="frame">
             {loading && <div className="skeleton" />}
             {imageUrl && !loading && (
@@ -130,7 +61,26 @@ export default function ViewerScreen({
             )}
           </div>
 
-          {/* Create Folder CTA */}
+          {promptHistory.length > 0 && (
+            <div className="chat-history">
+              {promptHistory.map((msg, i) => (
+                <div key={i} className="chat-msg">
+                  <div className="chat-msg-label">
+                    {msg.type === 'generate' ? 'Initial prompt' : `Iteration ${i}`}
+                  </div>
+                  <div className="chat-msg-bubble">{msg.text}</div>
+                </div>
+              ))}
+              {loading && (
+                <div className="chat-loading">
+                  <span className="chat-loading-dot" />
+                  <span className="chat-loading-dot" />
+                  <span className="chat-loading-dot" />
+                </div>
+              )}
+            </div>
+          )}
+
           {imageUrl && !loading && (
             <div className="folder-cta">
               <button className="folder-btn" onClick={onCreateFolder}>
@@ -144,7 +94,6 @@ export default function ViewerScreen({
             </div>
           )}
 
-          {/* Iteration zone */}
           {showIteration && !loading && (
             <div className="iteration-zone fade-up">
               <PromptBar
@@ -158,7 +107,6 @@ export default function ViewerScreen({
             </div>
           )}
 
-          {/* Error box */}
           {error && <div className="error-box fade-in">❌ {error}</div>}
         </div>
       </div>

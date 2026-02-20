@@ -2,7 +2,7 @@ import PromptBar from './PromptBar'
 import alstomLogo from '../assets/alstom-logo.png'
 import '../styles/home.css'
 
-export default function HomeScreen({ prompt, setPrompt, onGenerate, status, loading, userImage, setUserImage }) {
+export default function HomeScreen({ prompt, setPrompt, onGenerate, status, loading }) {
   return (
     <section className="home">
       <div className="home-inner">
@@ -30,9 +30,6 @@ export default function HomeScreen({ prompt, setPrompt, onGenerate, status, load
             placeholder="Describe your concept idea…"
             buttonText={loading ? 'Generating…' : 'Generate'}
             disabled={loading}
-            onAttach={setUserImage}
-            attachment={userImage}
-            onRemoveAttachment={() => setUserImage(null)}
           />
         </div>
 
